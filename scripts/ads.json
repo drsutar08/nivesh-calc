@@ -2,5 +2,8 @@
   "_help": "Paste the code your ad network gives you. 'head' goes once in the page <head>. 'slot' is the ad unit snippet, shown twice on each calculator page (below the result and at the bottom). Leave both empty for no ads. Then run: node scripts/build.js",
   "head": "",
   "slot": "",
-  "publisher": "ca-pub-6071081432967277"
+  "publisher": "ca-pub-6071081432967277",
+  "slotId": "8670690217",
+  "slotIdWide": "7565171300",
+  "slotIdTall": "6045186014"
 }

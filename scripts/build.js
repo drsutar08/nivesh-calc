@@ -5,15 +5,24 @@ const root = path.join(__dirname, "..");
 const SITE = (process.env.SITE_URL || "https://niveshcalculator.pages.dev/").replace(/\/?$/, "/");
 const SITE_NAME = "Nivesh Calc";
 // Ads: set ADSENSE_CLIENT (like ca-pub-1234567890123456) to turn ads on. ADSENSE_SLOT (an ad unit ID) is optional; without it Google Auto ads are used.
-const AD_CLIENT_ENV = process.env.ADSENSE_CLIENT || "", AD_SLOT = process.env.ADSENSE_SLOT || "";
+const AD_CLIENT_ENV = process.env.ADSENSE_CLIENT || "", AD_SLOT_ENV = process.env.ADSENSE_SLOT || "";
 // Any other ad network: paste its code into scripts/ads.json (used only when AdSense is not configured).
 const adsFile = process.env.ADS_FILE || path.join(__dirname, "ads.json");
 const customAds = fs.existsSync(adsFile) ? JSON.parse(fs.readFileSync(adsFile, "utf8")) : {};
 // AdSense publisher ID (ca-pub-...): used for ads.txt and the google-adsense-account meta tag on every page, even when ad units are off.
 const PUB = AD_CLIENT_ENV || customAds.publisher || "";
 // The AdSense script goes on every page (as Google asks) whenever a publisher ID is set. Set "off": true in ads.json to switch it off.
+const AD_SLOT = AD_SLOT_ENV || customAds.slotId || ""; // ad unit ID (digits) from AdSense: Ads > By ad unit > Display ads
 const AD_CLIENT = customAds.off ? "" : PUB;
-const adUnit = () => !AD_CLIENT && customAds.slot ? `<div class="ad"><small>Advertisement</small>${customAds.slot}</div>` : AD_CLIENT && AD_SLOT ? `<div class="ad"><small>Advertisement</small><ins class="adsbygoogle" style="display:block" data-ad-client="${AD_CLIENT}" data-ad-slot="${AD_SLOT}" data-ad-format="auto" data-full-width-responsive="true"></ins><script>(adsbygoogle=window.adsbygoogle||[]).push({});</script></div>` : "";
+const AD_WIDE_SLOT = process.env.ADSENSE_SLOT_WIDE || customAds.slotIdWide || ""; // horizontal banner unit ID
+const AD_TALL_SLOT = process.env.ADSENSE_SLOT_TALL || customAds.slotIdTall || ""; // vertical (skyscraper) unit ID, shown in a side rail on wide screens only
+const adRail = () => AD_CLIENT && AD_TALL_SLOT && !customAds.off ? `<div class="ad-rail" role="complementary" aria-label="Advertisement"><small>Advertisement</small><ins class="adsbygoogle" style="display:block" data-ad-client="${AD_CLIENT}" data-ad-slot="${AD_TALL_SLOT}" data-ad-format="vertical" data-full-width-responsive="false"></ins><script>(function(){var e=document.currentScript.previousElementSibling;if(e.offsetWidth>0)(adsbygoogle=window.adsbygoogle||[]).push({})})()</script></div>` : "";
+const adUnit = (kind) => {
+  const wide = kind === "wide" && AD_WIDE_SLOT, slot = wide ? AD_WIDE_SLOT : AD_SLOT;
+  if (!AD_CLIENT && customAds.slot) return `<div class="ad"><small>Advertisement</small>${customAds.slot}</div>`;
+  if (!(AD_CLIENT && slot)) return "";
+  return `<div class="ad${wide ? " wide" : ""}"><small>Advertisement</small><ins class="adsbygoogle" style="display:block" data-ad-client="${AD_CLIENT}" data-ad-slot="${slot}" data-ad-format="${wide ? "horizontal" : "auto"}" data-full-width-responsive="true"></ins><script>(adsbygoogle=window.adsbygoogle||[]).push({});</script></div>`;
+};
 
 // Load the calculator definitions straight from js/app.js (everything before the UI code).
 const src = fs.readFileSync(path.join(root, "js/app.js"), "utf8");
@@ -116,7 +125,7 @@ all.forEach(c => {
   const html = template
     .replace("{{BASE}}", depth ? '<base href="../">' : "")
     .replace("{{SEO}}", () => seo(c, isCalc))
-    .replace("{{ANALYTICS}}", () => analytics).replace("{{ID}}", c.id).replace("{{NAV}}", () => navFor(c))
+    .replace("{{ANALYTICS}}", () => analytics).replace("{{ADRAIL}}", () => adRail()).replace("{{ID}}", c.id).replace("{{NAV}}", () => navFor(c))
     .replace("{{SUPPORT}}", () => { const k = all.find(x => x.id === "coffee"); return `<div class="support"><a href="${pathOf(k)}" data-id="coffee"${c.id === "coffee" ? ' aria-current="page"' : ""}><span class="ic">${esc(k.ic)}</span><span class="lb">${esc(k.name)}</span></a></div>`; })
     .replace("{{H1}}", () => esc(c.name)).replace("{{LEDE}}", () => esc(c.lede))
     .replace("{{PAGEHIDDEN}}", isCalc ? " hidden" : "").replace("{{PAGEHTML}}", () => isCalc ? "" : c.html)
@@ -124,7 +133,7 @@ all.forEach(c => {
     .replace("{{FORMULA}}", () => isCalc ? c.formula : "").replace("{{HOWTO}}", () => isCalc ? guide(c) + howTo(c) : "")
     .replace("{{RELATED}}", () => related(c))
     .replace("{{AFFILIATE}}", () => isCalc ? affiliateBox(c) : "")
-    .replace("{{AD1}}", () => isCalc ? adUnit() : "").replace("{{AD2}}", () => isCalc ? adUnit() : "")
+    .replace("{{AD1}}", () => adUnit()).replace("{{AD2}}", () => adUnit("wide"))
     .replace("{{ADSCRIPT}}", () => !AD_CLIENT && isCalc && customAds.head ? customAds.head : AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "");
   const out = c.id === "average" ? path.join(root, "index.html") : path.join(root, pathOf(c), "index.html");
   fs.mkdirSync(path.dirname(out), { recursive: true });
@@ -153,21 +162,21 @@ const writeGuide = (dir, html, key, url) => { const out = path.join(root, dir, "
 guides.forEach(g => {
   const url = guideUrl(g);
   const body = `<header><p class="gmeta"><a href="guides/">Guides</a> · By <a href="about-us/">Diptiranjan Sutar</a> · Last updated ${g.updated}</p><h1>${esc(g.title)}</h1><p class="lede">${esc(g.desc)}</p></header>
-<article>${g.sections.map(s => `<h2>${esc(s.h)}</h2>${s.p.map(p => /^[A-Za-z ]+ = /.test(p) ? `<p class="formula">${esc(p)}</p>` : `<p>${esc(p)}</p>`).join("")}`).join("")}
+<article>${g.sections.map((s, i) => (i === 2 ? adUnit() : "") + `<h2>${esc(s.h)}</h2>${s.p.map(p => /^[A-Za-z ]+ = /.test(p) ? `<p class="formula">${esc(p)}</p>` : `<p>${esc(p)}</p>`).join("")}`).join("")}
 <h2>Frequently asked questions</h2>${g.faq.map(([q, a]) => `<h3 class="faq-q">${esc(q)}</h3><p>${esc(a)}</p>`).join("")}</article>
-<section class="howto"><h2>Try the calculators</h2><ul class="ticks">${calcLinks(g.calcs).map(x => `<li><a href="${pathOf(x)}">${esc(x.name)}</a> – ${esc(x.lede)}</li>`).join("")}</ul></section>
+${adUnit("wide")}<section class="howto"><h2>Try the calculators</h2><ul class="ticks">${calcLinks(g.calcs).map(x => `<li><a href="${pathOf(x)}">${esc(x.name)}</a> – ${esc(x.lede)}</li>`).join("")}</ul></section>
 <section class="howto related"><h2>More guides</h2><ul class="ticks">${guides.filter(x => x !== g).map(x => `<li><a href="guides/${x.slug}/">${esc(x.title)}</a></li>`).join("")}</ul></section>`;
   const ld = [{ "@context": "https://schema.org", "@type": "Article", headline: g.title, description: g.desc, url, dateModified: g.updated, datePublished: g.updated, inLanguage: "en-IN", mainEntityOfPage: url, image: OG_IMAGE, author: { "@type": "Person", name: "Diptiranjan Sutar", url: SITE + "about-us/" }, publisher: { "@type": "Organization", name: SITE_NAME, url: SITE, logo: { "@type": "ImageObject", url: SITE + "images/icon-512.png" } } },
     { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE }, { "@type": "ListItem", position: 2, name: "Guides", item: SITE + "guides/" }, { "@type": "ListItem", position: 3, name: g.title, item: url }] },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: g.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) }];
-  writeGuide("guides/" + g.slug, guideTemplate.replace("{{BASEHREF}}", "../../").replace("{{SEO}}", () => guideSeo(g.title, g.desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "").replace("{{ANALYTICS}}", () => analytics).replace("{{BODY}}", () => body), "guide:" + g.slug, url);
+  writeGuide("guides/" + g.slug, guideTemplate.replace("{{BASEHREF}}", "../../").replace("{{SEO}}", () => guideSeo(g.title, g.desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "").replace("{{ANALYTICS}}", () => analytics).replace("{{ADRAIL}}", () => adRail()).replace("{{BODY}}", () => body), "guide:" + g.slug, url);
 });
 {
   const url = SITE + "guides/", title = "Investing Guides for India", desc = "Plain-language guides on SIPs, lumpsum investing, capital gains tax and retirement planning, each linked to a free calculator.";
   const body = `<header><p class="gmeta"><a href="./">Nivesh Calc</a></p><h1>${title}</h1><p class="lede">${desc}</p></header>` +
-    guides.map(g => `<a class="gcard" href="guides/${g.slug}/"><b>${esc(g.title)}</b><span>${esc(g.desc)}</span></a>`).join("");
+    guides.map(g => `<a class="gcard" href="guides/${g.slug}/"><b>${esc(g.title)}</b><span>${esc(g.desc)}</span></a>`).join("") + adUnit("wide");
   const ld = [{ "@context": "https://schema.org", "@type": "CollectionPage", name: title, url, description: desc }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE }, { "@type": "ListItem", position: 2, name: "Guides", item: url }] }];
-  writeGuide("guides", guideTemplate.replace("{{BASEHREF}}", "../").replace("{{SEO}}", () => guideSeo(title, desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "").replace("{{ANALYTICS}}", () => analytics).replace("{{BODY}}", () => body), "guides-index", url);
+  writeGuide("guides", guideTemplate.replace("{{BASEHREF}}", "../").replace("{{SEO}}", () => guideSeo(title, desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "").replace("{{ANALYTICS}}", () => analytics).replace("{{ADRAIL}}", () => adRail()).replace("{{BODY}}", () => body), "guides-index", url);
 }
 // Web app manifest
 fs.writeFileSync(path.join(root, "site.webmanifest"), JSON.stringify({ name: "Nivesh Calc", short_name: "Nivesh Calc", description: "Free stock and investment calculators", start_url: "./", display: "standalone", background_color: "#f5f7f6", theme_color: "#0f7a55", icons: [{ src: "images/icon-192.png", sizes: "192x192", type: "image/png" }, { src: "images/icon-512.png", sizes: "512x512", type: "image/png" }] }, null, 2));

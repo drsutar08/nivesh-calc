@@ -35,3 +35,10 @@ After you add or change a calculator, or change `scripts/template.html`, run:
     SITE_URL=https://your-domain.com/ node scripts/build.js
 
 On Windows PowerShell: `$env:SITE_URL="https://your-domain.com/"; node scripts/build.js`. Then upload the whole folder. Old `#hash` links redirect to the new pages.
+
+## Guides, analytics and images
+- Long-form guides live in `scripts/guides.js` and are built to `guides/<slug>/`. Add an object there and rebuild. Keep them free of figures that change (tax rates, charges).
+- Analytics: set `CF_BEACON=<Cloudflare Web Analytics token>` (or `GA_ID=G-XXXX`) when you build. Without either, no analytics script is added.
+- `images/og-image.png` (1200×630) is the social preview; `images/icon-*.png` and `site.webmanifest` are the app icons.
+- `scripts/.lastmod.json` remembers when each page last changed, so `sitemap.xml` only updates `lastmod` for pages that really changed. Keep this file.
+- When you move to your own domain: `SITE_URL=https://yourdomain.com/ node scripts/build.js`, then upload the folder.

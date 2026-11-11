@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<base href="{{BASEHREF}}">
+{{SEO}}
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f7a55'/%3E%3Ctext x='16' y='23' font-size='20' font-family='sans-serif' font-weight='700' text-anchor='middle' fill='white'%3E%E2%82%B9%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#0f7a55">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+<style>.gwrap{max-width:760px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:18px}.gtop{display:flex;justify-content:space-between;align-items:center}.gwrap h1{font:800 clamp(24px,5vw,34px)/1.2 var(--f-display);margin:0}.gmeta{color:var(--muted);font-size:13px;margin:0}.gwrap article h2{font:700 20px var(--f-display);margin:26px 0 8px}.gwrap article p{line-height:1.7;margin:0 0 12px}.gwrap .gcard{display:block;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;color:var(--ink);text-decoration:none}.gwrap .gcard b{display:block;font:700 16px var(--f-display);color:var(--accent)}.gwrap .gcard span{color:var(--muted);font-size:14px}.gwrap .formula{font:500 14px var(--f-num);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}</style>
+{{ADSCRIPT}}
+{{ANALYTICS}}
+</head>
+<body data-page="guide">
+<div class="gwrap">
+  <div class="gtop"><a class="logo" href="./"><span class="mark">₹</span>Nivesh Calc</a><button class="theme" id="theme" type="button" aria-label="Toggle dark mode">Dark</button></div>
+  {{BODY}}
+  <p class="foot">Estimates for planning only. This is not investment, tax or legal advice. <a href="./">Calculators</a> · <a href="guides/">Guides</a> · <a href="about-us/">About</a> · <a href="contact-us/">Contact</a> · <a href="disclaimer/">Disclaimer</a> · <a href="privacy-policy/">Privacy</a></p>
+</div>
+<script>(function(){var r=document.documentElement,b=document.getElementById("theme");function s(){b.textContent=r.dataset.theme==="dark"?"Light":"Dark"}try{var t=localStorage.getItem("nc-theme");if(t)r.dataset.theme=t}catch(e){}s();b.onclick=function(){r.dataset.theme=r.dataset.theme==="dark"?"light":"dark";try{localStorage.setItem("nc-theme",r.dataset.theme)}catch(e){}s()}})();</script>
+</body>
+</html>

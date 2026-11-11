@@ -17,6 +17,15 @@ const AD_CLIENT = customAds.off ? "" : PUB;
 const AD_WIDE_SLOT = process.env.ADSENSE_SLOT_WIDE || customAds.slotIdWide || ""; // horizontal banner unit ID
 const AD_TALL_SLOT = process.env.ADSENSE_SLOT_TALL || customAds.slotIdTall || ""; // vertical (skyscraper) unit ID, shown in a side rail on wide screens only
 const adRail = () => AD_CLIENT && AD_TALL_SLOT && !customAds.off ? `<div class="ad-rail" role="complementary" aria-label="Advertisement"><small>Advertisement</small><ins class="adsbygoogle" style="display:block" data-ad-client="${AD_CLIENT}" data-ad-slot="${AD_TALL_SLOT}" data-ad-format="vertical" data-full-width-responsive="false"></ins><script>(function(){var e=document.currentScript.previousElementSibling;if(e.offsetWidth>0)(adsbygoogle=window.adsbygoogle||[]).push({})})()</script></div>` : "";
+// Second ad network, fixed 300x250 iframe banner. Set in ads.json: "net300": {"key": "...", "host": "https://host.example"}; remove it to turn it off.
+const net = customAds.net300 || {};
+const netBox = () => net.key && String(net.host || "").startsWith("https://") && !customAds.off ? `<div class="adx"><small>Advertisement</small><script>atOptions={'key':'${net.key}','format':'iframe','height':250,'width':300,'params':{}};</script><script src="${net.host}/22/${net.key}"></script></div>` : "";
+// Same network, 160x600 skyscraper on the left edge of wide screens. The code is only written into the page when the screen is wide enough, so narrow screens never load it.
+const net160 = customAds.net160 || {};
+const netLeft = (minW) => net160.key && String(net160.host || "").startsWith("https://") && !customAds.off ? `<div class="adl"><small>Advertisement</small><script>if(window.innerWidth>=${minW}){atOptions={'key':'${net160.key}','format':'iframe','height':600,'width':160,'params':{}};document.write('<script src="${net160.host}/22/${net160.key}"><\\/script>')}</script></div>` : "";
+// Same network, 728x90 leaderboard. Needs a 728px-wide content area, so the code is only written into the page on screens wide enough.
+const net728 = customAds.net728 || {};
+const netBanner = (minW) => net728.key && String(net728.host || "").startsWith("https://") && !customAds.off ? `<div class="adx wide728"><small>Advertisement</small><script>if(window.innerWidth>=${minW}){atOptions={'key':'${net728.key}','format':'iframe','height':90,'width':728,'params':{}};document.write('<script src="${net728.host}/22/${net728.key}"><\\/script>')}</script></div>` : "";
 const adUnit = (kind) => {
   const wide = kind === "wide" && AD_WIDE_SLOT, slot = wide ? AD_WIDE_SLOT : AD_SLOT;
   if (!AD_CLIENT && customAds.slot) return `<div class="ad"><small>Advertisement</small>${customAds.slot}</div>`;
@@ -125,7 +134,7 @@ all.forEach(c => {
   const html = template
     .replace("{{BASE}}", depth ? '<base href="../">' : "")
     .replace("{{SEO}}", () => seo(c, isCalc))
-    .replace("{{ANALYTICS}}", () => analytics).replace("{{ADRAIL}}", () => adRail()).replace("{{ID}}", c.id).replace("{{NAV}}", () => navFor(c))
+    .replace("{{ANALYTICS}}", () => analytics).replace("{{ADRAIL}}", () => adRail()).replace("{{ADLEFT}}", () => netLeft(1700)).replace("{{ID}}", c.id).replace("{{NAV}}", () => navFor(c))
     .replace("{{SUPPORT}}", () => { const k = all.find(x => x.id === "coffee"); return `<div class="support"><a href="${pathOf(k)}" data-id="coffee"${c.id === "coffee" ? ' aria-current="page"' : ""}><span class="ic">${esc(k.ic)}</span><span class="lb">${esc(k.name)}</span></a></div>`; })
     .replace("{{H1}}", () => esc(c.name)).replace("{{LEDE}}", () => esc(c.lede))
     .replace("{{PAGEHIDDEN}}", isCalc ? " hidden" : "").replace("{{PAGEHTML}}", () => isCalc ? "" : c.html)
@@ -133,7 +142,7 @@ all.forEach(c => {
     .replace("{{FORMULA}}", () => isCalc ? c.formula : "").replace("{{HOWTO}}", () => isCalc ? guide(c) + howTo(c) : "")
     .replace("{{RELATED}}", () => related(c))
     .replace("{{AFFILIATE}}", () => isCalc ? affiliateBox(c) : "")
-    .replace("{{AD1}}", () => adUnit()).replace("{{AD2}}", () => adUnit("wide"))
+    .replace("{{AD1}}", () => adUnit()).replace("{{AD2}}", () => adUnit("wide")).replace("{{AD3}}", () => netBox()).replace("{{AD4}}", () => netBanner(1040))
     .replace("{{ADSCRIPT}}", () => !AD_CLIENT && isCalc && customAds.head ? customAds.head : AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "");
   const out = c.id === "average" ? path.join(root, "index.html") : path.join(root, pathOf(c), "index.html");
   fs.mkdirSync(path.dirname(out), { recursive: true });
@@ -163,20 +172,20 @@ guides.forEach(g => {
   const url = guideUrl(g);
   const body = `<header><p class="gmeta"><a href="guides/">Guides</a> · By <a href="about-us/">Diptiranjan Sutar</a> · Last updated ${g.updated}</p><h1>${esc(g.title)}</h1><p class="lede">${esc(g.desc)}</p></header>
 <article>${g.sections.map((s, i) => (i === 2 ? adUnit() : "") + `<h2>${esc(s.h)}</h2>${s.p.map(p => /^[A-Za-z ]+ = /.test(p) ? `<p class="formula">${esc(p)}</p>` : `<p>${esc(p)}</p>`).join("")}`).join("")}
-<h2>Frequently asked questions</h2>${g.faq.map(([q, a]) => `<h3 class="faq-q">${esc(q)}</h3><p>${esc(a)}</p>`).join("")}</article>
+${netBanner(800)}<h2>Frequently asked questions</h2>${g.faq.map(([q, a]) => `<h3 class="faq-q">${esc(q)}</h3><p>${esc(a)}</p>`).join("")}</article>
 ${adUnit("wide")}<section class="howto"><h2>Try the calculators</h2><ul class="ticks">${calcLinks(g.calcs).map(x => `<li><a href="${pathOf(x)}">${esc(x.name)}</a> – ${esc(x.lede)}</li>`).join("")}</ul></section>
-<section class="howto related"><h2>More guides</h2><ul class="ticks">${guides.filter(x => x !== g).map(x => `<li><a href="guides/${x.slug}/">${esc(x.title)}</a></li>`).join("")}</ul></section>`;
+${netBox()}<section class="howto related"><h2>More guides</h2><ul class="ticks">${guides.filter(x => x !== g).map(x => `<li><a href="guides/${x.slug}/">${esc(x.title)}</a></li>`).join("")}</ul></section>`;
   const ld = [{ "@context": "https://schema.org", "@type": "Article", headline: g.title, description: g.desc, url, dateModified: g.updated, datePublished: g.updated, inLanguage: "en-IN", mainEntityOfPage: url, image: OG_IMAGE, author: { "@type": "Person", name: "Diptiranjan Sutar", url: SITE + "about-us/" }, publisher: { "@type": "Organization", name: SITE_NAME, url: SITE, logo: { "@type": "ImageObject", url: SITE + "images/icon-512.png" } } },
     { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE }, { "@type": "ListItem", position: 2, name: "Guides", item: SITE + "guides/" }, { "@type": "ListItem", position: 3, name: g.title, item: url }] },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: g.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) }];
-  writeGuide("guides/" + g.slug, guideTemplate.replace("{{BASEHREF}}", "../../").replace("{{SEO}}", () => guideSeo(g.title, g.desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "").replace("{{ANALYTICS}}", () => analytics).replace("{{ADRAIL}}", () => adRail()).replace("{{BODY}}", () => body), "guide:" + g.slug, url);
+  writeGuide("guides/" + g.slug, guideTemplate.replace("{{BASEHREF}}", "../../").replace("{{SEO}}", () => guideSeo(g.title, g.desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "").replace("{{ANALYTICS}}", () => analytics).replace("{{ADRAIL}}", () => adRail()).replace("{{ADLEFT}}", () => netLeft(1300)).replace("{{BODY}}", () => body), "guide:" + g.slug, url);
 });
 {
   const url = SITE + "guides/", title = "Investing Guides for India", desc = "Plain-language guides on SIPs, lumpsum investing, capital gains tax and retirement planning, each linked to a free calculator.";
   const body = `<header><p class="gmeta"><a href="./">Nivesh Calc</a></p><h1>${title}</h1><p class="lede">${desc}</p></header>` +
     guides.map(g => `<a class="gcard" href="guides/${g.slug}/"><b>${esc(g.title)}</b><span>${esc(g.desc)}</span></a>`).join("") + adUnit("wide");
   const ld = [{ "@context": "https://schema.org", "@type": "CollectionPage", name: title, url, description: desc }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE }, { "@type": "ListItem", position: 2, name: "Guides", item: url }] }];
-  writeGuide("guides", guideTemplate.replace("{{BASEHREF}}", "../").replace("{{SEO}}", () => guideSeo(title, desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "").replace("{{ANALYTICS}}", () => analytics).replace("{{ADRAIL}}", () => adRail()).replace("{{BODY}}", () => body), "guides-index", url);
+  writeGuide("guides", guideTemplate.replace("{{BASEHREF}}", "../").replace("{{SEO}}", () => guideSeo(title, desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "").replace("{{ANALYTICS}}", () => analytics).replace("{{ADRAIL}}", () => adRail()).replace("{{ADLEFT}}", () => netLeft(1300)).replace("{{BODY}}", () => body), "guides-index", url);
 }
 // Web app manifest
 fs.writeFileSync(path.join(root, "site.webmanifest"), JSON.stringify({ name: "Nivesh Calc", short_name: "Nivesh Calc", description: "Free stock and investment calculators", start_url: "./", display: "standalone", background_color: "#f5f7f6", theme_color: "#0f7a55", icons: [{ src: "images/icon-192.png", sizes: "192x192", type: "image/png" }, { src: "images/icon-512.png", sizes: "512x512", type: "image/png" }] }, null, 2));

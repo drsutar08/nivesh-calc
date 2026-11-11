@@ -174,3 +174,17 @@ a.btn{text-decoration:none;display:inline-block}
 .ad:not(:has(ins[data-ad-status="filled"])){position:absolute;left:0;width:100%;visibility:hidden;pointer-events:none;margin:0;max-height:0;overflow:hidden}
 .ad ins[data-ad-status="unfilled"]{display:none!important}
 .ad-rail:not(:has(ins[data-ad-status="filled"])){visibility:hidden;pointer-events:none}
+
+/* Second network 300x250: stays out of the layout until its iframe exists */
+.adx{display:none;text-align:center;margin:0}
+.adx:has(iframe){display:block}
+.adx small{display:block;font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+
+/* Second network 160x600: fixed at the left edge of the content area, only once its iframe exists */
+.adl{display:none;position:fixed;top:24px;left:284px;width:160px;text-align:center;z-index:5}
+.adl:has(iframe){display:block}
+.adl small{display:block;font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+body[data-page="guide"] .adl{left:16px}
+
+/* 728x90 leaderboard: centred, no overflow */
+.adx.wide728{max-width:100%;overflow:hidden}

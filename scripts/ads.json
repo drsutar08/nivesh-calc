@@ -5,5 +5,17 @@
   "publisher": "ca-pub-6071081432967277",
   "slotId": "8670690217",
   "slotIdWide": "7565171300",
-  "slotIdTall": "6045186014"
+  "slotIdTall": "6045186014",
+  "net300": {
+    "key": "32068b7d2013099bd2937754fc0b862a",
+    "host": "https://bauval.org"
+  },
+  "net160": {
+    "key": "5167ffc50ac1195ad4451b51ce1e3008",
+    "host": "https://bauval.org"
+  },
+  "net728": {
+    "key": "0c74ac5a9fa94e9d2f98b8bc106d5aed",
+    "host": "https://bauval.org"
+  }
 }

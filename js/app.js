@@ -163,9 +163,15 @@ const PAGES = [
    <p>Nivesh Calc is a free collection of stock and investment calculators. It covers averaging down, profit and loss, SIP, lumpsum, SWP, EMI, CAGR, dividends, buybacks, splits, bonus shares and demergers.</p>
    <p><b>Our mission</b> is to take the arithmetic out of investing, so you can see what a decision means for your money before you make it.</p>
    <ul class="ticks"><li>Free to use, with no sign-up</li><li>Runs in your browser, so the numbers you enter stay on your device</li><li>Every calculator explains its formula</li></ul>
-   <p>Missing a calculator or found a mistake? <a href="contact-us/">Tell us</a>.</p></div>`},
+   <h2>Who runs this site</h2>
+   <p>Nivesh Calc is built and maintained by <b>Diptiranjan Sutar</b>, an investor and software developer based in India. I write the calculators and the guides myself, and I check each formula against worked examples before it goes live.</p>
+   <p>I am not a SEBI-registered investment adviser or a tax professional. The calculators and guides are for education and planning, not personal advice. Please read the <a href="disclaimer/">disclaimer</a>.</p>
+   <p>Missing a calculator or found a mistake? <a href="contact-us/">Tell me</a>. Corrections are made as soon as they are confirmed.</p></div>`},
  {id:"contact",group:"More",ic:"@",name:"Contact Us",lede:"Feedback, suggestions and bug reports are welcome.",
-  html:`<form class="panel" id="contact-form" autocomplete="off"><h2>Send a message</h2>
+  html:`<div class="panel prose"><h2>Get in touch</h2>
+   <p>Nivesh Calc is run by Diptiranjan Sutar, an investor and software developer based in India. You can email me at <a href="mailto:drsutar08@gmail.com">drsutar08@gmail.com</a> or use the form below. I read every message and aim to reply within a few days.</p>
+   <p>I cannot give personal investment, tax or legal advice, but I am happy to hear about mistakes, missing calculators and ideas.</p></div>
+   <form class="panel" id="contact-form" autocomplete="off"><h2>Send a message</h2>
    <label class="f" for="c-name">Full name<div class="inp"><input id="c-name" name="name" required></div></label>
    <label class="f" for="c-email">Email address<div class="inp"><input id="c-email" name="email" type="email" required></div></label>
    <label class="f" for="c-msg">Message<div class="inp"><textarea id="c-msg" name="msg" rows="6" required></textarea></div></label>

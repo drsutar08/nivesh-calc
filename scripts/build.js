@@ -4,21 +4,35 @@ const fs = require("fs"), path = require("path");
 const root = path.join(__dirname, "..");
 const SITE = (process.env.SITE_URL || "https://example.com/").replace(/\/?$/, "/");
 const SITE_NAME = "Nivesh Calc";
+// Ads: set ADSENSE_CLIENT (like ca-pub-1234567890123456) to turn ads on. ADSENSE_SLOT (an ad unit ID) is optional; without it Google Auto ads are used.
+const AD_CLIENT = process.env.ADSENSE_CLIENT || "", AD_SLOT = process.env.ADSENSE_SLOT || "";
+const adUnit = () => AD_CLIENT && AD_SLOT ? `<div class="ad"><small>Advertisement</small><ins class="adsbygoogle" style="display:block" data-ad-client="${AD_CLIENT}" data-ad-slot="${AD_SLOT}" data-ad-format="auto" data-full-width-responsive="true"></ins><script>(adsbygoogle=window.adsbygoogle||[]).push({});</script></div>` : "";
 
 // Load the calculator definitions straight from js/app.js (everything before the UI code).
 const src = fs.readFileSync(path.join(root, "js/app.js"), "utf8");
 const head = src.slice(0, src.indexOf("const LOT_COLORS"));
 const { CALCS, PAGES, pathOf } = new Function(head + "; return {CALCS,PAGES,pathOf};")();
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const content = require("./content.js");
+const content = Object.assign({}, require("./content.js"), require("./content-more.js"));
+const affFile = process.env.AFFILIATES_FILE || path.join(__dirname, "affiliates.json");
+const affiliates = fs.existsSync(affFile) ? JSON.parse(fs.readFileSync(affFile, "utf8")) : {};
+function affiliateBox(c) {
+  const items = [...(affiliates["*"] || []), ...(affiliates[c.id] || [])].filter(x => x && x.label && /^https?:\/\//.test(x.url || ""));
+  if (!items.length) return "";
+  return `<section class="howto aff"><h2>Useful services</h2><ul class="ticks">${items.map(x => `<li><a href="${esc(x.url)}" target="_blank" rel="sponsored nofollow noopener">${esc(x.label)}</a>${x.note ? " – " + esc(x.note) : ""}</li>`).join("")}</ul><p class="aff-note">Sponsored links. We may earn a commission if you sign up through them, at no extra cost to you. This is not a recommendation or investment advice.</p></section>`;
+}
 const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
 const all = [...CALCS, ...PAGES];
 const urlOf = c => SITE + (c.id === "average" ? "" : pathOf(c));
 
 const groups = [];
 all.forEach(c => { let g = groups.find(x => x.name === c.group); if (!g) groups.push(g = { name: c.group, items: [] }); g.items.push(c); });
-const nav = groups.map(g => `<div class="group">${esc(g.name)}</div>` +
-  g.items.map(c => `<a href="${pathOf(c)}" data-id="${c.id}"><span class="ic">${esc(c.ic)}</span>${esc(c.name)}</a>`).join("")).join("");
+const shortName = c => c.name.replace(/ Calculator$/, "");
+const navFor = cur => groups.map(g => {
+  const open = g.items.some(x => x.id === cur.id);
+  return `<details class="grp"${open ? " open" : ""} data-open="${open ? 1 : 0}"><summary>${esc(g.name)}<span class="gcount">${g.items.length}</span></summary><div class="links">` +
+    g.items.map(x => `<a href="${pathOf(x)}" data-id="${x.id}" title="${esc(x.name)}"${x.id === cur.id ? ' aria-current="page"' : ""}><span class="ic">${esc(x.ic)}</span><span class="lb">${esc(shortName(x))}</span></a>`).join("") + "</div></details>";
+}).join("");
 
 function howTo(c) {
   let hero = "the result";
@@ -73,12 +87,15 @@ all.forEach(c => {
   const html = template
     .replace("{{BASE}}", depth ? '<base href="../">' : "")
     .replace("{{SEO}}", () => seo(c, isCalc))
-    .replace("{{ID}}", c.id).replace("{{NAV}}", () => nav)
+    .replace("{{ID}}", c.id).replace("{{NAV}}", () => navFor(c))
     .replace("{{H1}}", () => esc(c.name)).replace("{{LEDE}}", () => esc(c.lede))
     .replace("{{PAGEHIDDEN}}", isCalc ? " hidden" : "").replace("{{PAGEHTML}}", () => isCalc ? "" : c.html)
     .split("{{WORKHIDDEN}}").join(isCalc ? "" : " hidden")
     .replace("{{FORMULA}}", () => isCalc ? c.formula : "").replace("{{HOWTO}}", () => isCalc ? guide(c) + howTo(c) : "")
-    .replace("{{RELATED}}", () => related(c));
+    .replace("{{RELATED}}", () => related(c))
+    .replace("{{AFFILIATE}}", () => isCalc ? affiliateBox(c) : "")
+    .replace("{{AD1}}", () => isCalc ? adUnit() : "").replace("{{AD2}}", () => isCalc ? adUnit() : "")
+    .replace("{{ADSCRIPT}}", () => AD_CLIENT && isCalc ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "");
   const out = c.id === "average" ? path.join(root, "index.html") : path.join(root, pathOf(c), "index.html");
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, html); n++;
@@ -88,5 +105,10 @@ const today = new Date().toISOString().slice(0, 10);
 fs.writeFileSync(path.join(root, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   all.map(c => `  <url><loc>${urlOf(c)}</loc><lastmod>${today}</lastmod></url>`).join("\n") + `\n</urlset>\n`);
 fs.writeFileSync(path.join(root, "robots.txt"), `User-agent: *\nAllow: /\n\nSitemap: ${SITE}sitemap.xml\n`);
+if (AD_CLIENT) {
+  fs.writeFileSync(path.join(root, "ads.txt"), `google.com, ${AD_CLIENT.replace("ca-", "")}, DIRECT, f08c47fec0942fa0
+`);
+  console.log("Ads on for", AD_CLIENT, AD_SLOT ? "(manual units)" : "(auto ads only)");
+} else if (fs.existsSync(path.join(root, "ads.txt"))) fs.unlinkSync(path.join(root, "ads.txt"));
 console.log(`Built ${n} pages for ${SITE}`);
 if (SITE.includes("example.com")) console.warn("WARNING: SITE_URL is not set, so canonical URLs and the sitemap use example.com.");

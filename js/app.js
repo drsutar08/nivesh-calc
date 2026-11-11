@@ -141,7 +141,7 @@ const CALCS = [
 
 
 // Set this to the address that should receive messages from the contact form.
-const CONTACT_EMAIL = "hello@example.com";
+const CONTACT_EMAIL = "drsutar08@gmail.com";
 // Formspree form ID (the part after /f/ in https://formspree.io/f/xxxxxxxx). Leave empty to fall back to the visitor's email app.
 const FORMSPREE_ID = "mgakwzaz";
 const DISCLAIMERS = [
@@ -167,6 +167,19 @@ const PAGES = [
    <label class="f" for="c-msg">Message<div class="inp"><textarea id="c-msg" name="msg" rows="6" required></textarea></div></label>
    <div class="btns"><button class="btn primary" type="submit">Send message</button></div>
    <p class="note" id="c-status" role="status">We read every message.</p></form>`},
+ {id:"privacy",group:"More",ic:"🔒",name:"Privacy Policy",lede:"What this site does and does not collect.",
+  html:`<div class="panel prose"><h2>Your calculator inputs stay with you</h2>
+   <p>The numbers you type into a calculator are processed in your browser. They are not sent to our servers or stored by us.</p>
+   <h2>What is stored on your device</h2>
+   <p>If you switch between light and dark mode, your choice is saved in your browser's local storage so the site remembers it. You can clear it from your browser settings.</p>
+   <h2>Links to other services</h2>
+   <p>Some pages may include links to partner services. If you sign up through them, we may earn a commission. These partners may set their own cookies when you visit them, under their own privacy policies.</p>
+   <h2>Messages you send us</h2>
+   <p>If you use the contact form, your name, email address and message are sent to us through Formspree, a form service, so that we can read and reply to them. We use them only to respond.</p>
+   <h2>Advertising and cookies</h2>
+   <p>This site may show ads served by Google AdSense or other ad partners. These partners may use cookies or similar technologies to show ads based on your visits to this and other sites. You can manage ad personalisation at <a href="https://adssettings.google.com" rel="noopener">Google Ads Settings</a> and learn more about how Google uses data at <a href="https://policies.google.com/technologies/partner-sites" rel="noopener">policies.google.com/technologies/partner-sites</a>.</p>
+   <h2>Changes and questions</h2>
+   <p>We may update this policy from time to time. If you have a question, please <a href="contact-us/">contact us</a>.</p></div>`},
  {id:"disclaimer",group:"More",ic:"!",name:"Disclaimer",lede:"Please read this before you use any result.",
   html:`<div class="panel prose"><p class="note">Content on this site is for education only and is not financial advice.</p>
    <ol class="risks">${DISCLAIMERS.map(([h,p])=>`<li><h3>${h}</h3><p>${p}</p></li>`).join("")}</ol>
@@ -177,13 +190,6 @@ const $=s=>document.querySelector(s);
 const state={};
 let cur;
 
-function buildNav(){
-  if($("#nav").children.length) return; // already rendered at build time for search engines
-  let html="",g="";
-  [...CALCS,...PAGES].forEach(c=>{ if(c.group!==g){g=c.group;html+=`<div class="group">${g}</div>`}
-    html+=`<a href="${pathOf(c)}" data-id="${c.id}"><span class="ic">${c.ic}</span>${c.name}</a>`;});
-  $("#nav").innerHTML=html;
-}
 
 function field(id,label,val,unit){
   const pre = unit==="₹";
@@ -269,7 +275,7 @@ $("#form").addEventListener("submit",e=>e.preventDefault());
 
 // theme toggle
 const root=document.documentElement;
-function isDark(){return root.dataset.theme? root.dataset.theme==="dark" : matchMedia("(prefers-color-scheme: dark)").matches}
+function isDark(){return root.dataset.theme==="dark"}
 function syncTheme(){$("#theme").textContent=isDark()?"Light":"Dark"}
 $("#theme").onclick=()=>{root.dataset.theme=isDark()?"light":"dark";try{localStorage.setItem("nc-theme",root.dataset.theme)}catch(e){}syncTheme()};
 try{const t=localStorage.getItem("nc-theme");if(t)root.dataset.theme=t}catch(e){}
@@ -279,7 +285,6 @@ syncTheme();
 $("#menu").onclick=()=>$("#app").classList.add("open");
 $("#scrim").onclick=()=>$("#app").classList.remove("open");
 
-buildNav();
 // old #hash links: send them to the real page for that calculator
 const here=document.body.dataset.page||"average";
 const legacy=[...CALCS,...PAGES].find(x=>x.id===location.hash.slice(1));
@@ -311,15 +316,16 @@ document.addEventListener("submit",async e=>{
   btn.disabled=false;
 });
 
-// sidebar search: hide links that do not match and any group left empty
+// sidebar search: hide links that do not match, open groups that have matches
 $("#q").addEventListener("input",()=>{
-  const q=$("#q").value.trim().toLowerCase(); let head=null, shown=0, any=0;
-  const flush=()=>{ if(head) head.hidden=!any; };
-  [...$("#nav").children].forEach(el=>{
-    if(el.classList.contains("group")){ flush(); head=el; any=0; }
-    else { const m=!q||el.textContent.toLowerCase().includes(q); el.hidden=!m; if(m){any++;shown++} }
+  const q=$("#q").value.trim().toLowerCase(); let shown=0;
+  document.querySelectorAll("#nav .grp").forEach(g=>{
+    let any=0;
+    g.querySelectorAll("a").forEach(a=>{const m=!q||a.title.toLowerCase().includes(q); a.hidden=!m; if(m) any++;});
+    g.hidden=!any; shown+=any;
+    g.open = q ? !!any : g.dataset.open==="1";
   });
-  flush(); $("#nomatch").hidden=shown>0;
+  $("#nomatch").hidden=shown>0;
 });
 $("#q").addEventListener("keydown",e=>{
   if(e.key==="Enter"){ const a=[...document.querySelectorAll("#nav a")].find(x=>!x.hidden); if(a){location.href=a.href.endsWith("/")&&location.protocol==="file:"?a.href+"index.html":a.href;} }

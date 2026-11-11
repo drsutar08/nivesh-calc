@@ -1,0 +1,8 @@
+{
+  "_help": "Add partner links here. Use \"*\" for links shown on every calculator, or a calculator id (see js/app.js) for one page. Each item needs label, url and optionally note. Leave the lists empty to show nothing. Then run: node scripts/build.js",
+  "*": [],
+  "brokerage": [],
+  "profit-loss": [],
+  "emi": [],
+  "sip": []
+}

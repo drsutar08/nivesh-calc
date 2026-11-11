@@ -6,7 +6,10 @@ const SITE = (process.env.SITE_URL || "https://example.com/").replace(/\/?$/, "/
 const SITE_NAME = "Nivesh Calc";
 // Ads: set ADSENSE_CLIENT (like ca-pub-1234567890123456) to turn ads on. ADSENSE_SLOT (an ad unit ID) is optional; without it Google Auto ads are used.
 const AD_CLIENT = process.env.ADSENSE_CLIENT || "", AD_SLOT = process.env.ADSENSE_SLOT || "";
-const adUnit = () => AD_CLIENT && AD_SLOT ? `<div class="ad"><small>Advertisement</small><ins class="adsbygoogle" style="display:block" data-ad-client="${AD_CLIENT}" data-ad-slot="${AD_SLOT}" data-ad-format="auto" data-full-width-responsive="true"></ins><script>(adsbygoogle=window.adsbygoogle||[]).push({});</script></div>` : "";
+// Any other ad network: paste its code into scripts/ads.json (used only when AdSense is not configured).
+const adsFile = process.env.ADS_FILE || path.join(__dirname, "ads.json");
+const customAds = fs.existsSync(adsFile) ? JSON.parse(fs.readFileSync(adsFile, "utf8")) : {};
+const adUnit = () => !AD_CLIENT && customAds.slot ? `<div class="ad"><small>Advertisement</small>${customAds.slot}</div>` : AD_CLIENT && AD_SLOT ? `<div class="ad"><small>Advertisement</small><ins class="adsbygoogle" style="display:block" data-ad-client="${AD_CLIENT}" data-ad-slot="${AD_SLOT}" data-ad-format="auto" data-full-width-responsive="true"></ins><script>(adsbygoogle=window.adsbygoogle||[]).push({});</script></div>` : "";
 
 // Load the calculator definitions straight from js/app.js (everything before the UI code).
 const src = fs.readFileSync(path.join(root, "js/app.js"), "utf8");
@@ -26,7 +29,7 @@ const all = [...CALCS, ...PAGES];
 const urlOf = c => SITE + (c.id === "average" ? "" : pathOf(c));
 
 const groups = [];
-all.forEach(c => { let g = groups.find(x => x.name === c.group); if (!g) groups.push(g = { name: c.group, items: [] }); g.items.push(c); });
+all.filter(c => c.id !== "coffee").forEach(c => { let g = groups.find(x => x.name === c.group); if (!g) groups.push(g = { name: c.group, items: [] }); g.items.push(c); });
 const shortName = c => c.name.replace(/ Calculator$/, "");
 const navFor = cur => groups.map(g => {
   const open = g.items.some(x => x.id === cur.id);
@@ -88,6 +91,7 @@ all.forEach(c => {
     .replace("{{BASE}}", depth ? '<base href="../">' : "")
     .replace("{{SEO}}", () => seo(c, isCalc))
     .replace("{{ID}}", c.id).replace("{{NAV}}", () => navFor(c))
+    .replace("{{SUPPORT}}", () => { const k = all.find(x => x.id === "coffee"); return `<div class="support"><a href="${pathOf(k)}" data-id="coffee"${c.id === "coffee" ? ' aria-current="page"' : ""}><span class="ic">${esc(k.ic)}</span><span class="lb">${esc(k.name)}</span></a></div>`; })
     .replace("{{H1}}", () => esc(c.name)).replace("{{LEDE}}", () => esc(c.lede))
     .replace("{{PAGEHIDDEN}}", isCalc ? " hidden" : "").replace("{{PAGEHTML}}", () => isCalc ? "" : c.html)
     .split("{{WORKHIDDEN}}").join(isCalc ? "" : " hidden")
@@ -95,7 +99,7 @@ all.forEach(c => {
     .replace("{{RELATED}}", () => related(c))
     .replace("{{AFFILIATE}}", () => isCalc ? affiliateBox(c) : "")
     .replace("{{AD1}}", () => isCalc ? adUnit() : "").replace("{{AD2}}", () => isCalc ? adUnit() : "")
-    .replace("{{ADSCRIPT}}", () => AD_CLIENT && isCalc ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "");
+    .replace("{{ADSCRIPT}}", () => !AD_CLIENT && isCalc && customAds.head ? customAds.head : AD_CLIENT && isCalc ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "");
   const out = c.id === "average" ? path.join(root, "index.html") : path.join(root, pathOf(c), "index.html");
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, html); n++;

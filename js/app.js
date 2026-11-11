@@ -143,6 +143,10 @@ const CALCS = [
 // Set this to the address that should receive messages from the contact form.
 const CONTACT_EMAIL = "drsutar08@gmail.com";
 // Formspree form ID (the part after /f/ in https://formspree.io/f/xxxxxxxx). Leave empty to fall back to the visitor's email app.
+// Your Buy Me a Coffee page, for example "https://buymeacoffee.com/yourname". Leave empty to hide the button.
+const COFFEE_URL = "https://buymeacoffee.com/drsutar08";
+// Put your payment QR image at this path (a PNG or JPG). The QR box stays hidden until the file exists.
+const COFFEE_QR = "images/payment-qr.png";
 const FORMSPREE_ID = "mgakwzaz";
 const DISCLAIMERS = [
  ["Market volatility","Share prices can rise or fall sharply in a short time because of economic news, company results, global events or plain sentiment. Past performance does not guarantee future returns."],
@@ -167,13 +171,25 @@ const PAGES = [
    <label class="f" for="c-msg">Message<div class="inp"><textarea id="c-msg" name="msg" rows="6" required></textarea></div></label>
    <div class="btns"><button class="btn primary" type="submit">Send message</button></div>
    <p class="note" id="c-status" role="status">We read every message.</p></form>`},
+ {id:"coffee",group:"More",ic:"☕",name:"Buy Me a Coffee",lede:"Enjoying the calculators? You can support the site.",
+  html:`<div class="panel prose"><h2>Thank you for using Nivesh Calc</h2>
+   <p>Every calculator here is free to use, with no sign-up. If they saved you time or helped you make a better decision, a small tip helps cover the time that goes into building, checking and updating them. It is completely optional, and the site stays free whether or not you give.</p></div>
+   <div class="two">
+    <section class="panel prose"><h2>Online</h2>
+     <p>Tip through Buy Me a Coffee with a card or other supported method. You will go to their secure page.</p>
+     ${COFFEE_URL ? `<div class="btns"><a class="btn primary" href="${COFFEE_URL}" target="_blank" rel="noopener">☕ Buy me a coffee</a></div>` : `<p class="note">The support link will appear here soon.</p>`}</section>
+    <section class="panel prose qr-card"><h2>Scan to pay</h2>
+     <p>Prefer a payment app? Scan this code with it.</p>
+     <figure class="qr"><img src="${COFFEE_QR}" alt="QR code to support Nivesh Calc" width="220" height="220" onerror="this.closest('.qr-card').hidden=true"></figure></section>
+   </div>
+   <div class="panel prose wide"><p>Other ways to help: share a calculator with a friend, or <a href="contact-us/">send feedback</a> so we can improve them.</p></div>`},
  {id:"privacy",group:"More",ic:"🔒",name:"Privacy Policy",lede:"What this site does and does not collect.",
   html:`<div class="panel prose"><h2>Your calculator inputs stay with you</h2>
    <p>The numbers you type into a calculator are processed in your browser. They are not sent to our servers or stored by us.</p>
    <h2>What is stored on your device</h2>
    <p>If you switch between light and dark mode, your choice is saved in your browser's local storage so the site remembers it. You can clear it from your browser settings.</p>
    <h2>Links to other services</h2>
-   <p>Some pages may include links to partner services. If you sign up through them, we may earn a commission. These partners may set their own cookies when you visit them, under their own privacy policies.</p>
+   <p>Some pages may include links to partner services. If you sign up through them, we may earn a commission. These partners, and Buy Me a Coffee if you choose to tip, are separate websites that may set their own cookies under their own privacy policies.</p>
    <h2>Messages you send us</h2>
    <p>If you use the contact form, your name, email address and message are sent to us through Formspree, a form service, so that we can read and reply to them. We use them only to respond.</p>
    <h2>Advertising and cookies</h2>
@@ -196,7 +212,7 @@ function field(id,label,val,unit){
   return `<label class="f" for="f-${cur.id}-${id}">${label}<div class="inp">${pre?'<span>₹</span>':''}<input id="f-${cur.id}-${id}" data-k="${id}" type="number" inputmode="decimal" step="any" value="${val}">${!pre&&unit?`<span>${unit}</span>`:''}</div></label>`;
 }
 function showPage(pg){
-  document.querySelectorAll("nav a").forEach(a=>{ if(a.dataset.id===pg.id) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
+  document.querySelectorAll("#side a[data-id]").forEach(a=>{ if(a.dataset.id===pg.id) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
   $("#title").textContent=pg.name; $("#lede").textContent=pg.lede;
   $("#page").innerHTML=pg.html; $("#page").hidden=false;
   document.querySelector(".work").hidden=true; document.querySelector(".howto").hidden=true;
@@ -207,7 +223,7 @@ function render(id){
   const pg=PAGES.find(p=>p.id===id); if(pg){showPage(pg);return}
   $("#page").hidden=true; document.querySelector(".work").hidden=false; document.querySelector(".howto").hidden=false;
   cur = CALCS.find(c=>c.id===id)||CALCS[0];
-  document.querySelectorAll("nav a").forEach(a=>{ if(a.dataset.id===cur.id) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
+  document.querySelectorAll("#side a[data-id]").forEach(a=>{ if(a.dataset.id===cur.id) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
   $("#title").textContent=cur.name; $("#lede").textContent=cur.lede; $("#formula").innerHTML=cur.formula;
   if(cur.lots){ state[cur.id] ||= cur.lots.map(l=>[...l]); drawLots(); }
   else{
@@ -328,5 +344,6 @@ $("#q").addEventListener("input",()=>{
   $("#nomatch").hidden=shown>0;
 });
 $("#q").addEventListener("keydown",e=>{
+  if(e.key==="Escape"){ $("#q").value=""; $("#q").dispatchEvent(new Event("input")); $("#q").blur(); return; }
   if(e.key==="Enter"){ const a=[...document.querySelectorAll("#nav a")].find(x=>!x.hidden); if(a){location.href=a.href.endsWith("/")&&location.protocol==="file:"?a.href+"index.html":a.href;} }
 });

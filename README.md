@@ -36,6 +36,9 @@ After you add or change a calculator, or change `scripts/template.html`, run:
 
 On Windows PowerShell: `$env:SITE_URL="https://your-domain.com/"; node scripts/build.js`. Then upload the whole folder. Old `#hash` links redirect to the new pages.
 
+## IndexNow (Bing and others)
+`npm run build` builds the site and then pings IndexNow with every sitemap URL whose `lastmod` changed since the last ping. `scripts/.indexnow.json` remembers what was sent, so keep it. `npm run indexnow:all` resubmits every URL. Set `INDEXNOW=0` to skip the ping. The key file `d1bf13db99098b943c0329a8b93a73b2.txt` must stay at the site root.
+
 ## Guides, analytics and images
 - Long-form guides live in `scripts/guides.js` and are built to `guides/<slug>/`. Add an object there and rebuild. Keep them free of figures that change (tax rates, charges).
 - Analytics: set `CF_BEACON=<Cloudflare Web Analytics token>` (or `GA_ID=G-XXXX`) when you build. Without either, no analytics script is added.

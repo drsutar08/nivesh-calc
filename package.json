@@ -1,0 +1,10 @@
+{
+  "name": "nivesh-calc",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.js",
+    "postbuild": "node scripts/indexnow.js",
+    "indexnow": "node scripts/indexnow.js",
+    "indexnow:all": "node scripts/indexnow.js --all"
+  }
+}

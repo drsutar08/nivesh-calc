@@ -30,7 +30,7 @@ const src = fs.readFileSync(path.join(root, "js/app.js"), "utf8");
 const head = src.slice(0, src.indexOf("const LOT_COLORS"));
 const { CALCS, PAGES, pathOf, slugOf } = new Function(head + "; return {CALCS,PAGES,pathOf,slugOf};")();
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const content = Object.assign({}, require("./content.js"), require("./content-more.js"));
+const content = Object.assign({}, require("./content.js"), require("./content-more.js"), require("./content-extra.js"));
 const affFile = process.env.AFFILIATES_FILE || path.join(__dirname, "affiliates.json");
 const affiliates = fs.existsSync(affFile) ? JSON.parse(fs.readFileSync(affFile, "utf8")) : {};
 function affiliateBox(c) {
@@ -124,7 +124,7 @@ function seo(c, isCalc) {
 
 // Homepage ("colour blocks" design): intro panel, stat tiles, most-used list, one gradient block per category, latest guides.
 const CAT_KEY = { "Stocks": "stocks", "Mutual funds": "funds", "Loans & growth": "growth", "Everyday": "everyday" };
-const CAT_BLURB = { "Stocks": "Averages, profit and loss, corporate actions, charges and tax on shares.", "Mutual funds": "Plan SIPs, lumpsums, withdrawals and your retirement corpus.", "Loans & growth": "EMIs, deposits, compounding and the effect of inflation.", "Everyday": "Quick percentage answers for everyday maths." };
+const CAT_BLURB = { "Stocks": "Averages, profit and loss, corporate actions, charges and tax on shares.", "Mutual funds": "Plan SIPs, lumpsums, withdrawals and your retirement corpus, and check your real return.", "Loans & growth": "EMIs, loan prepayment, deposits, PPF, compounding and the effect of inflation.", "Everyday": "Quick percentage and GST answers for everyday maths." };
 const catKey = name => CAT_KEY[name] || "stocks";
 // The category blocks with a pill link to every calculator (homepage and 404 page).
 const bento = () => { const cats = groups.filter(g => g.items.some(x => x.calc || x.lots)); return `<section class="hb-bento" id="calculators" aria-label="All calculators">${cats.map(g => { const k = catKey(g.name); return `<div class="hb-blk hb-${k} t-${k}" id="cat-${slugOf(g.name)}"><div class="hb-head"><div><h2>${esc(g.name)} calculators</h2><p>${esc(CAT_BLURB[g.name] || "")}</p></div><span class="hb-n" aria-hidden="true">${String(g.items.length).padStart(2, "0")}</span></div>

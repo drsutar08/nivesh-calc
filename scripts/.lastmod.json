@@ -1,114 +1,114 @@
 {
  "average": {
-  "h": "5e1891362b0566cddb3405dfc9939d7f",
+  "h": "4c7ed99ab8d98e0ae2a732de63b200a2",
   "d": "2026-11-22"
  },
  "profit-loss": {
-  "h": "dcfcaaebe0e4a1f27dc04011f72ccfa9",
+  "h": "5dd7696abe4e15dd550120b082c23868",
   "d": "2026-11-22"
  },
  "split": {
-  "h": "a0d4be03738fb6143c994683869dab8a",
+  "h": "b72c0c71c65459c7fbf0cea08b991d89",
   "d": "2026-11-22"
  },
  "bonus": {
-  "h": "f0c0209f45125be6fefdc9916ae9a02b",
+  "h": "11906d13e6822c064f817df75d5ed082",
   "d": "2026-11-22"
  },
  "dividend": {
-  "h": "05b0550117c4e051c5074d9d7f595175",
+  "h": "b915bbbd4fad1676e957667d397532ad",
   "d": "2026-11-22"
  },
  "buyback": {
-  "h": "73a70d5efb5f912021491f652b664d75",
+  "h": "10d9758c1d4ad9fcb1c50ba28db5a65a",
   "d": "2026-11-22"
  },
  "demerger": {
-  "h": "efc821a9c8e54dcd7fab5977efc5eb0e",
+  "h": "36c15306f1540de1f6e182e8001ec43f",
   "d": "2026-11-22"
  },
  "brokerage": {
-  "h": "9d76932a2e4e407d6a5f121ed3fb42fe",
+  "h": "d2eab337c77ef4a9d68cb08f47b17752",
   "d": "2026-11-22"
  },
  "capital-gains": {
-  "h": "80686a49e0e40a0e306fb9d9ef19f3a0",
+  "h": "1d2f00590aece8b0671604885bb44eb7",
   "d": "2026-11-22"
  },
  "position-size": {
-  "h": "a56db07ab3d8cebd2736ff984bf33cbf",
+  "h": "bf9af20990e867a0cbb3b27509869747",
   "d": "2026-11-22"
  },
  "sip": {
-  "h": "9c0630362573fe67151b4f4d6e7c7f75",
+  "h": "e8cdd73868bd283820fbf70cbc24b19e",
   "d": "2026-11-22"
  },
  "stepup-sip": {
-  "h": "57f2b40d2ecb5786cedc3acb2155f9e4",
+  "h": "0a16d85b456e3d7213cc354de18ffdbe",
   "d": "2026-11-22"
  },
  "goal-planner": {
-  "h": "1214f2d84aeb5f1618387401a7504a72",
+  "h": "6b2aaf7483ae205effad19397f8fb8a2",
   "d": "2026-11-22"
  },
  "lumpsum": {
-  "h": "6588b2313b5ca9fbce627aa1c79390b5",
+  "h": "2e5b27d970327c55cc6c3f3a7088be16",
   "d": "2026-11-22"
  },
  "swp": {
-  "h": "06099e8fb57a31e7c5db422a06390bd7",
+  "h": "b4899e4fdd792efdae13dfe08695e90c",
   "d": "2026-11-22"
  },
  "retirement": {
-  "h": "69e75ac37ef4f9ce117c5c630b93bd72",
+  "h": "50d77693d0348f9e6fef6d3e6c9f6437",
   "d": "2026-11-22"
  },
  "emi": {
-  "h": "491a2508d295de5bc6cc87da17f890e1",
+  "h": "cb7ae54e82067a66834401fec4dcc981",
   "d": "2026-11-22"
  },
  "cagr": {
-  "h": "4f11778b9f9c89373d381d778f223153",
+  "h": "1e6270d85ad5e972f8133616cee5f54f",
   "d": "2026-11-22"
  },
  "rule-of-72": {
-  "h": "fd058d5a8ef89af896b2d6b525b3cb83",
+  "h": "79fb5f1bb6af1e90750d6c579c02399d",
   "d": "2026-11-22"
  },
  "fd": {
-  "h": "8a43d5f647d5285cc35d791b84b32706",
+  "h": "51019f82989f8b2b36377cf211f93b1e",
   "d": "2026-11-22"
  },
  "rd": {
-  "h": "cee29b197732543402be904acc53c23f",
+  "h": "61535941a8d0e2c767662b287c742aac",
   "d": "2026-11-22"
  },
  "inflation": {
-  "h": "d356fd717fc4e587d98e7dfe7cb90689",
+  "h": "f5eff558fb6985bad9e0e2f2d82113a7",
   "d": "2026-11-22"
  },
  "percentage": {
-  "h": "a743ef9994ae5ee4fb219808b7eca72c",
+  "h": "2d41c0326bfce66cc929c8e3ece03d68",
   "d": "2026-11-22"
  },
  "about": {
-  "h": "2d6aecd92b873377bca5fc8fbebaa46b",
+  "h": "2683f2f766c6072e535554115e10d93f",
   "d": "2026-11-22"
  },
  "contact": {
-  "h": "c95edb196ca50d647be3bd0d7d48ddbe",
+  "h": "f0e2d6f1ebf00c0019e3ee95a9168857",
   "d": "2026-11-22"
  },
  "coffee": {
-  "h": "0ad9b984acf4b1c7504079a736c6a92c",
+  "h": "eda81f419774a6a5229c80aa90067bf7",
   "d": "2026-11-22"
  },
  "privacy": {
-  "h": "a01f57bc304a81d3ee22c15c555b143b",
+  "h": "4036982b8a6d7d04cad462825cf8836c",
   "d": "2026-11-22"
  },
  "disclaimer": {
-  "h": "96fa22670da94fb14ddbc120203bdb36",
+  "h": "bf55e9aed17ced9d588697a8e8487df8",
   "d": "2026-11-22"
  },
  "guide:how-is-sip-return-calculated": {
@@ -144,7 +144,39 @@
   "d": "2026-11-22"
  },
  "home": {
-  "h": "6cfae98ac4f73b2d78c017d45aa95a1b",
+  "h": "51089568475a46f341faf0e740391417",
+  "d": "2026-11-22"
+ },
+ "target-average": {
+  "h": "3b4f3b9a3b92f58a0397ac540a77f3e2",
+  "d": "2026-11-22"
+ },
+ "rights": {
+  "h": "5ced654f275318f703d00a86b82dcbca",
+  "d": "2026-11-22"
+ },
+ "ltcg-harvest": {
+  "h": "5c9c22775211e4473b6cc6f705ea7933",
+  "d": "2026-11-22"
+ },
+ "xirr": {
+  "h": "edc3fcec1c9f6432d0cba60591c43d10",
+  "d": "2026-11-22"
+ },
+ "ppf": {
+  "h": "3971f1b51b3d2d5b03ea745d32ca43a7",
+  "d": "2026-11-22"
+ },
+ "compound-interest": {
+  "h": "99449846282fbcf55998f0721dd1ddd0",
+  "d": "2026-11-22"
+ },
+ "loan-prepayment": {
+  "h": "8c591c24494785ca2c93162d550902d3",
+  "d": "2026-11-22"
+ },
+ "gst": {
+  "h": "7ffd2da7721dafc15bf81bed02e6d167",
   "d": "2026-11-22"
  }
 }

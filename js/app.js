@@ -61,6 +61,27 @@ const CALCS = [
     const ra=f.cap*f.risk/100, per=f.entry-f.stop, qty=Math.min(Math.floor(ra/per),Math.floor(f.cap/f.entry)), loss=qty*per, prof=qty*(f.target-f.entry), pv=qty*f.entry;
     return {hero:["Shares to buy",num(qty,0)],rows:[["Money at risk",inr(loss),"loss"],["Position value",inr(pv)],["Share of capital",pct(pv/f.cap*100)],["Potential profit at target",inr(prof),sign(prof)],["Risk : reward",f.target>f.entry?`1 : ${num((f.target-f.entry)/per)}`:"—"]],note:f.target<=f.entry?"Set a target above the entry price to see the reward.":null}},
   formula:"Money you can risk = capital × risk %. Shares = money you can risk ÷ (entry − stop-loss), limited by the shares your capital can buy. Risk : reward = (target − entry) ÷ (entry − stop-loss)."},
+ {id:"target-average",group:"Stocks",ic:"x̄↓",name:"Target Average Calculator",lede:"Find how many shares to buy at today's price to bring your average to a target.",
+  fields:[["held","Shares held",100,"units"],["avg","Current average price",500,"₹"],["cmp","Price you will buy at",400,"₹"],["target","Target average price",450,"₹"]],
+  calc:f=>{ const lo=Math.min(f.avg,f.cmp), hi=Math.max(f.avg,f.cmp);
+    if(!(f.target>lo && f.target<hi)) return {hero:["Shares to buy","—"],rows:[],note:"The target average must lie between your current average and the price you will buy at. Buying below your average can only pull it down to just above that price."};
+    const x=f.held*(f.avg-f.target)/(f.target-f.cmp), buy=Math.ceil(x-1e-9), inv=buy*f.cmp, tot=f.held+buy, na=(f.held*f.avg+inv)/tot;
+    return {hero:["Shares to buy",num(buy,0)],rows:[["Money needed",inr(inv)],["Total shares after buying",num(tot,0)],["New average price",inr(na)],["Total invested after buying",inr(f.held*f.avg+inv)],["Exact shares before rounding up",num(x,2)]]}},
+  formula:"Shares to buy = shares held × (current average − target) ÷ (target − buy price). The answer is rounded up to whole shares, so the new average lands on the target or just past it. Brokerage and charges are not included."},
+ {id:"rights",group:"Stocks",ic:"R+",name:"Rights Issue Calculator",lede:"See your rights entitlement, the ex-rights price and your new average cost.",
+  fields:[["held","Shares held",100,"units"],["a","Rights shares offered",1,"get"],["b","For every",5,"held"],["rp","Rights issue price",800,"₹"],["mp","Market price before the issue",1000,"₹"],["avg","Your average buy price",900,"₹"]],
+  calc:f=>{ const ent=Math.floor(f.held*f.a/f.b), cost=ent*f.rp, terp=(f.b*f.mp+f.a*f.rp)/(f.a+f.b), right=terp-f.rp, na=(f.held*f.avg+cost)/(f.held+ent);
+    return {hero:["Rights shares you can apply for",num(ent,0)],rows:[["Amount to pay",inr(cost)],["Theoretical ex-rights price (TERP)",inr(terp)],["Discount to market price",pct((f.mp-f.rp)/f.mp*100)],["Value of each right",inr(Math.max(0,right))],["New average if you subscribe",ent?inr(na):"—"],["Value lost if you neither apply nor sell your rights",inr(Math.max(0,ent*right)),right>0?"loss":""]],
+      note:f.rp>=f.mp?"The issue price is at or above the market price, so the rights have no value at today's price.":null}},
+  formula:"Rights shares = shares held × (rights offered ÷ for every), rounded down. TERP = (for every × market price + rights offered × issue price) ÷ (rights offered + for every). Each right is worth about TERP − issue price, and that is what you give up if you neither subscribe nor sell your rights entitlement."},
+ {id:"ltcg-harvest",group:"Stocks",ic:"LT",name:"LTCG Tax Harvesting Calculator",lede:"Work out how much long-term gain to book this year to use your tax-free limit.",
+  zeroOk:["booked"],
+  fields:[["val","Current value of long-term holdings",600000,"₹"],["gain","Unrealised long-term gain in them",200000,"₹"],["booked","Long-term gains already booked this year",0,"₹"],["ex","Yearly LTCG exemption",125000,"₹"],["rate","LTCG tax rate",12.5,"%"]],
+  calc:f=>{ if(f.gain>f.val) return {hero:["Gain to book tax-free","—"],rows:[],note:"The unrealised gain cannot be more than the current value of the holdings."};
+    const room=Math.max(0,f.ex-f.booked), h=Math.min(f.gain,room), sell=h/(f.gain/f.val), all=Math.max(0,f.booked+f.gain-f.ex)*f.rate/100;
+    return {hero:["Gain to book tax-free",inr(h,0),h>0?"gain":""],rows:[["Value to sell and buy back",inr(sell,0)],["Exemption still available",inr(room,0)],["Tax this gain would cost if booked in a later year",inr(h*f.rate/100,0),h>0?"gain":""],["Unrealised gain left after harvesting",inr(f.gain-h,0)],["Tax if you booked all gains this year",inr(all,0),all>0?"loss":""]],
+      note:room===0?"You have already used this year's exemption, so there is nothing left to harvest tax-free.":null}},
+  formula:"Gain you can book tax-free = the smaller of your unrealised long-term gain and the exemption left this year (exemption − gains already booked). Value to sell = that gain ÷ (unrealised gain ÷ current value), assuming the gain is spread evenly across the holding. Buying back at today's price resets your cost, so less gain is taxed later. The defaults reflect the rules for listed equity at the time of writing, so check the current exemption and rate."},
  {id:"sip",group:"Mutual funds",ic:"↻",name:"SIP Calculator",lede:"Estimate what a monthly investment grows to over time.",
   fields:[["p","Monthly investment",10000,"₹"],["r","Expected return (p.a.)",12,"%"],["y","Duration",15,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12, fv= i? f.p*((Math.pow(1+i,n)-1)/i)*(1+i) : f.p*n, inv=f.p*n;
@@ -101,6 +122,13 @@ const CALCS = [
       need=Math.max(0,corpus-f.have*Math.pow(1+i,n)), sip=need*i/((Math.pow(1+i,n)-1)*(1+i));
     return {hero:["Corpus needed at retirement",inr(corpus,0)],rows:[["Monthly expenses at retirement",inr(e/12,0)],["Savings will grow to",inr(f.have*Math.pow(1+i,n),0)],["Monthly SIP needed",inr(sip,0),"gain"],["Years to retirement",num(yb,0)],["Years of retirement",num(yr,0)]],note:need===0?"Your existing savings already cover the corpus.":null}},
   formula:"Expenses at retirement = today's expenses × (1 + inflation)<sup>years to retirement</sup>. The corpus is the present value of those expenses, rising with inflation, over your retirement years, discounted at the post-retirement return. The SIP covers what your current savings will not."},
+ {id:"xirr",group:"Mutual funds",ic:"XR",name:"XIRR Calculator",lede:"Find the real annualised return (XIRR) of a monthly SIP from its current value.",
+  fields:[["sip","Monthly SIP amount",10000,"₹"],["m","Months invested",36,"months"],["val","Current value",430000,"₹"]],
+  calc:f=>{ const n=Math.round(f.m), inv=f.sip*n, fv=r=>{let s=0;for(let j=1;j<=n;j++)s+=f.sip*Math.pow(1+r,j);return s};
+    let lo=-0.99, hi=1; for(let k=0;k<200;k++){const mid=(lo+hi)/2; if(fv(mid)>f.val) hi=mid; else lo=mid;}
+    const x=(Math.pow(1+(lo+hi)/2,12)-1)*100, g=f.val-inv;
+    return {hero:["XIRR (annualised return)",pct(x),sign(x)],rows:[["Total invested",inr(inv,0)],["Gain",inr(g,0),sign(g)],["Absolute return",pct(g/inv*100),sign(g)],["Instalments counted",num(n,0)]],bar:g>0?[inv,g]:null}},
+  formula:"XIRR is the yearly rate at which every SIP instalment, grown to today, adds up to the current value. This calculator assumes equal instalments on the same date each month, the first one m months ago, and solves for the monthly rate r. XIRR = (1 + r)<sup>12</sup> − 1. For irregular amounts or dates, use the XIRR function in a spreadsheet."},
  {id:"emi",group:"Loans & growth",ic:"≡",name:"EMI Calculator",lede:"Find the monthly instalment and total interest on a loan.",
   fields:[["p","Loan amount",3000000,"₹"],["r","Interest rate (p.a.)",8.5,"%"],["y","Tenure",20,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12,e= i? f.p*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1) : f.p/n,tot=e*n;
@@ -132,11 +160,36 @@ const CALCS = [
   calc:f=>{const k=Math.pow(1+f.r/100,f.y);
     return {hero:["Same things will cost",inr(f.a*k,0)],rows:[["Today's money will buy only",inr(f.a/k,0),"loss"],["Loss of buying power",pct((1-1/k)*100),"loss"],["Prices rise by",pct((k-1)*100)]]}},
   formula:"Future cost = amount × (1 + inflation)<sup>years</sup>. Buying power of today's money = amount ÷ (1 + inflation)<sup>years</sup>."},
+ {id:"ppf",group:"Loans & growth",ic:"PF",name:"PPF Calculator",lede:"Estimate the tax-free maturity value of your Public Provident Fund account.",
+  fields:[["d","Yearly deposit",150000,"₹"],["r","Interest rate (p.a.)",7.1,"%"],["y","Years",15,"years"]],
+  calc:f=>{ const n=Math.round(f.y), d=Math.min(f.d,150000); let a=0; for(let j=1;j<=n;j++) a+=d*Math.pow(1+f.r/100,j); const inv=d*n;
+    const notes=[]; if(f.d>150000) notes.push("PPF accepts at most ₹1.5 lakh a year, so the result uses ₹1.5 lakh."); if(n<15) notes.push("A PPF account matures after 15 years. You can then extend it in blocks of 5 years.");
+    return {hero:["Maturity value",inr(a,0)],rows:[["Total deposited",inr(inv,0)],["Interest earned (tax-free)",inr(a-inv,0),"gain"],["Years counted",num(n,0)]],bar:[inv,a-inv],note:notes.join(" ")||null}},
+  formula:"Maturity = D × [(1 + r) + (1 + r)<sup>2</sup> + … + (1 + r)<sup>n</sup>], assuming you deposit the full amount before 5 April each year so it earns interest for the whole year. PPF interest is worked out monthly and credited once a year. The government reviews the rate every quarter, and the default is the rate at the time of writing."},
+ {id:"compound-interest",group:"Loans & growth",ic:"CI",name:"Compound Interest Calculator",lede:"See how compound interest grows your money, and how much more it earns than simple interest.",
+  fields:[["p","Principal",100000,"₹"],["r","Interest rate (p.a.)",8,"%"],["y","Years",10,"years"],["m","Compounding times a year",4,"times"]],
+  calc:f=>{ const a=f.p*Math.pow(1+f.r/(100*f.m),f.m*f.y), ci=a-f.p, si=f.p*f.r*f.y/100;
+    return {hero:["Final amount",inr(a,0)],rows:[["Compound interest earned",inr(ci,0),"gain"],["Simple interest for comparison",inr(si,0)],["Extra earned by compounding",inr(ci-si,0),"gain"],["Effective annual rate",pct((Math.pow(1+f.r/(100*f.m),f.m)-1)*100)]],bar:[f.p,ci]}},
+  formula:"A = P × (1 + r ÷ (100 × m))<sup>m × t</sup>, where m is the number of compounding periods a year: 1 for yearly, 4 for quarterly, 12 for monthly. Simple interest = P × r × t ÷ 100. The effective annual rate is the yearly rate that gives the same result with yearly compounding."},
+ {id:"loan-prepayment",group:"Loans & growth",ic:"⌂",name:"Home Loan Prepayment Calculator",lede:"See how much interest and time you save by prepaying your home loan.",
+  zeroOk:["lump","extra"],
+  fields:[["p","Outstanding loan",3000000,"₹"],["r","Interest rate (p.a.)",8.5,"%"],["y","Remaining tenure",20,"years"],["lump","One-time prepayment now",200000,"₹"],["extra","Extra payment every month",5000,"₹"]],
+  calc:f=>{ const i=f.r/1200, n=Math.round(f.y*12), emi=f.p*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1), orig=emi*n-f.p;
+    if(f.lump>=f.p) return {hero:["Interest saved",inr(orig,0),"gain"],rows:[["EMI",inr(emi,0)],["Interest without prepayment",inr(orig,0)]],note:"That prepayment clears the whole loan."};
+    let bal=f.p-f.lump, m=0, paid=0; while(bal>0.005 && m<n){ const int=bal*i, pay=Math.min(bal+int,emi+f.extra); paid+=int; bal=bal+int-pay; m++; }
+    const ym=k=>{const y=Math.floor(k/12),mo=k%12;return `${y} ${y===1?"yr":"yrs"} ${mo} ${mo===1?"month":"months"}`}, saved=Math.max(0,orig-paid);
+    return {hero:["Interest saved",inr(saved,0),saved>0?"gain":""],rows:[["EMI (unchanged)",inr(emi,0)],["New tenure",ym(m)],["Time saved",ym(n-m),n>m?"gain":""],["Interest without prepayment",inr(orig,0)],["Interest with prepayment",inr(paid,0)],["Total prepaid",inr(f.lump+f.extra*m,0)]]}},
+  formula:"The EMI is worked out on the outstanding loan. The loan is then repaid month by month: each month's interest is balance × rate ÷ 12, and the EMI plus any extra payment clears that interest first and then the principal. A one-time prepayment comes off the balance before the first month. The EMI stays the same, so prepaying shortens the tenure. Check your loan terms for any prepayment charge."},
  {id:"percentage",group:"Everyday",ic:"%",name:"Percentage Calculator",lede:"Three common percentage questions, answered at once.",
   fields:[["a","Value A",25,""],["b","Value B",480,""]],
   calc:f=>{const ch=(f.b-f.a)/f.a*100;
     return {hero:[`${num(f.a)}% of ${num(f.b)}`,num(f.a*f.b/100,4)],rows:[[`${num(f.a)} is what % of ${num(f.b)}`,pct(f.a/f.b*100,4)],[`Change from ${num(f.a)} to ${num(f.b)}`,pct(ch),sign(ch)]]}},
-  formula:"A% of B = A × B ÷ 100. A as a % of B = A ÷ B × 100. Percent change = (B − A) ÷ A × 100."}
+  formula:"A% of B = A × B ÷ 100. A as a % of B = A ÷ B × 100. Percent change = (B − A) ÷ A × 100."},
+ {id:"gst",group:"Everyday",ic:"G%",name:"GST Calculator",lede:"Add GST to a price, or take it out of a price that already includes it.",
+  fields:[["a","Amount",10000,"₹"],["r","GST rate",18,"%"]],
+  calc:f=>{ const g=f.a*f.r/100, base=f.a*100/(100+f.r);
+    return {hero:["Price including GST",inr(f.a+g)],rows:[["GST to add",inr(g)],["CGST and SGST (each, within a state)",inr(g/2)],["IGST (between states)",inr(g)],[`If ${inr(f.a,0)} already includes GST: price before GST`,inr(base)],[`GST included in ${inr(f.a,0)}`,inr(f.a-base)]]}},
+  formula:"Adding GST: GST = amount × rate ÷ 100, and the total is amount + GST. Removing GST from a price that already includes it: price before GST = price × 100 ÷ (100 + rate). Within a state, GST is split equally into CGST and SGST. On sales between states it is charged as IGST. Use the rate that applies to your goods or service."}
 ];
 
 

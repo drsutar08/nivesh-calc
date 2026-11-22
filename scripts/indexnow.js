@@ -1,8 +1,10 @@
-// Pings IndexNow (Bing, Yandex, Seznam, Naver) with sitemap URLs that changed since the last ping.
+// Pings IndexNow (Bing, Yandex, Seznam, Naver) with sitemap URLs whose page content changed since the last ping.
+// Change is detected from a hash of each built page, so several changes on the same day are all caught.
 // Usage:  node scripts/indexnow.js          only new or changed URLs
 //         node scripts/indexnow.js --all    every URL in the sitemap
 // Set INDEXNOW=0 to skip (for example on a local test build).
 const fs = require("fs");
+const crypto = require("crypto");
 const path = require("path");
 
 const KEY = "d1bf13db99098b943c0329a8b93a73b2"; // must match /<KEY>.txt at the site root
@@ -25,7 +27,13 @@ let state = {};
 try { state = JSON.parse(fs.readFileSync(stateFile, "utf8")); } catch {}
 
 const all = process.argv.includes("--all");
-const changed = entries.filter(([u, d]) => all || state[u] !== d);
+// Hash the built file behind each URL (https://host/a/b/ -> a/b/index.html).
+const hashOf = u => {
+  const f = path.join(root, decodeURIComponent(new URL(u).pathname), "index.html");
+  return fs.existsSync(f) ? crypto.createHash("md5").update(fs.readFileSync(f)).digest("hex") : null;
+};
+const hashes = Object.fromEntries(entries.map(([u]) => [u, hashOf(u)]));
+const changed = entries.filter(([u]) => all || !hashes[u] || state[u] !== hashes[u]);
 if (!changed.length) {
   console.log("IndexNow: nothing changed since the last ping");
   process.exit(0);
@@ -50,7 +58,7 @@ fetch("https://api.indexnow.org/indexnow", {
       console.warn(`IndexNow: ${r.status} ${r.statusText} ${await r.text()}`);
       return;
     }
-    for (const [u, d] of changed) state[u] = d;
+    for (const [u] of changed) state[u] = hashes[u];
     fs.writeFileSync(stateFile, JSON.stringify(state, null, 1) + "\n");
     console.log(`IndexNow: submitted ${changed.length} URL(s), ${r.status} ${r.statusText}`);
   })

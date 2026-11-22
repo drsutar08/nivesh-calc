@@ -185,10 +185,12 @@ const guideSeo = (title, desc, url, ld) => `<title>${esc(title)} | ${SITE_NAME}<
 <meta name="twitter:image" content="${OG_IMAGE}">
 <script type="application/ld+json">${JSON.stringify(ld)}</script>`;
 const writeGuide = (dir, html, key, url) => { const out = path.join(root, dir, "index.html"); fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, html); n++; sitemap.push([url, stamp(key, html)]); };
+// A guide paragraph is shown as a formula box only when it reads "Name = expression" and is a single statement, not prose.
+const isFormula = p => /^[A-Za-z ]+ = /.test(p) && !/[.!?]\s+[A-Z]/.test(p) && p.length <= 120;
 guides.forEach(g => {
   const url = guideUrl(g);
   const body = `<header><p class="gmeta"><a href="guides/">Guides</a> · By <a href="about-us/">Diptiranjan Sutar</a> · Last updated ${g.updated}</p><h1>${esc(g.title)}</h1><p class="lede">${esc(g.desc)}</p></header>
-<article>${g.sections.map((s, i) => (i === 2 ? adUnit() : "") + `<h2>${esc(s.h)}</h2>${s.p.map(p => /^[A-Za-z ]+ = /.test(p) ? `<p class="formula">${esc(p)}</p>` : `<p>${esc(p)}</p>`).join("")}`).join("")}
+<article>${g.sections.map((s, i) => (i === 2 ? adUnit() : "") + `<h2>${esc(s.h)}</h2>${s.p.map(p => isFormula(p) ? `<p class="formula">${esc(p)}</p>` : `<p>${esc(p)}</p>`).join("")}`).join("")}
 <h2>Frequently asked questions</h2>${g.faq.map(([q, a]) => `<h3 class="faq-q">${esc(q)}</h3><p>${esc(a)}</p>`).join("")}</article>
 ${adUnit("wide")}<section class="howto"><h2>Try the calculators</h2><ul class="ticks">${calcLinks(g.calcs).map(x => `<li><a href="${pathOf(x)}">${esc(x.name)}</a> – ${esc(x.lede)}</li>`).join("")}</ul></section>
 ${netBox()}<section class="howto related"><h2>More guides</h2><ul class="ticks">${guides.filter(x => x !== g).map(x => `<li><a href="guides/${x.slug}/">${esc(x.title)}</a></li>`).join("")}</ul></section>`;

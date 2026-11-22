@@ -84,7 +84,8 @@ module.exports = [
         "The holding-period cut-off, the rates and the exemption limit have all been changed by Budgets in the past. Always check the current numbers on the Income Tax Department's website before you rely on any figure, including those in calculators."
       ] },
       { h: "How a gain is worked out", p: [
-        "Gain = sale value − purchase value − transfer costs such as brokerage. If you bought the same share in several lots at different prices, each lot has its own purchase date and price, and the lot you sold determines the gain. The Stock Average Calculator helps you track the blended cost, and the Stock Profit/Loss Calculator shows a single trade.",
+        "Gain = sale value − purchase value − transfer costs such as brokerage",
+        "If you bought the same share in several lots at different prices, each lot has its own purchase date and price, and the lot you sold determines the gain. The Stock Average Calculator helps you track the blended cost, and the Stock Profit/Loss Calculator shows a single trade.",
         "Intraday trades, F&O and delivery-based trades are treated differently. Intraday and F&O profits are generally not capital gains. If you trade often, speak to a tax professional about how your income is classified."
       ] },
       { h: "A simple way to think about the calculation", p: [

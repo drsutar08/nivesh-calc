@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="css/styles.css">
 {{ANALYTICS}}
 </head>
-<body data-page="{{ID}}">
+<body data-page="{{ID}}"{{BODYCLASS}}>
 <div class="app" id="app">
   <aside id="side">
     <div class="brand">
@@ -38,7 +38,7 @@
         <a class="logo" href="./"><span class="mark">₹</span>Nivesh Calc</a>
       </div>
       <header>
-        <h1 id="title">{{H1}}</h1>
+        {{CRUMB}}<h1 id="title">{{H1}}</h1>
         <p class="lede" id="lede">{{LEDE}}</p>
       </header>
       <section class="page" id="page"{{PAGEHIDDEN}}>{{PAGEHTML}}</section>
@@ -50,7 +50,7 @@
       {{AD1}}
       <section class="howto"{{WORKHIDDEN}}><h2>How it's calculated</h2><p id="formula">{{FORMULA}}</p>{{HOWTO}}</section>
       {{AD3}}
-      <section class="howto related"{{WORKHIDDEN}}><h2>More calculators</h2>{{RELATED}}</section>
+      {{RELATED}}
       {{AD2}}
       <p class="foot">Estimates for planning only. Returns are assumed constant and exclude taxes unless a field says otherwise. This is not investment advice. <a href="guides/">Guides</a> · <a href="about-us/">About</a> · <a href="contact-us/">Contact</a> · <a href="disclaimer/">Disclaimer</a> · <a href="privacy-policy/">Privacy</a></p>
     </div>

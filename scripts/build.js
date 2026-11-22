@@ -75,13 +75,19 @@ function guide(c) {
   return `<h2 style="margin-top:16px">${esc(g.heading)}</h2>${g.intro.map(p => `<p>${esc(p)}</p>`).join("")}<h3 class="faq-h">Frequently asked questions</h3>${g.faq.map(([q, a]) => `<h4 class="faq-q">${esc(q)}</h4><p>${esc(a)}</p>`).join("")}`;
 }
 
+// "More calculators" on a calculator page: a colour block in the page category with a pill for every other calculator in it
+// (topped up from other categories when the category is small), links to the other categories, then related guides.
 function related(c) {
+  const k = catKey(c.group);
   const same = CALCS.filter(x => x.group === c.group && x.id !== c.id);
-  const others = CALCS.filter(x => x.group !== c.group && x.id !== c.id);
-  const list = [...same, ...others].slice(0, 6);
+  const fill = ["average", "sip", "brokerage", "emi", "capital-gains", "swp", "cagr", "fd"].map(id => CALCS.find(x => x.id === id)).filter(x => x && x.group !== c.group && x.id !== c.id);
+  const list = same.length >= 4 ? same : [...same, ...fill].slice(0, Math.max(6, same.length));
+  const otherCats = groups.filter(g => g.name !== c.group && g.items.some(x => x.calc || x.lots));
   const gl = guides.filter(g => g.calcs.includes(c.id));
-  return `<ul class="ticks">${list.map(x => `<li><a href="${pathOf(x)}">${esc(x.name)}</a> – ${esc(x.lede)}</li>`).join("")}</ul>` +
-    (gl.length ? `<h2 style="margin-top:18px">Guides</h2><ul class="ticks">${gl.map(g => `<li><a href="guides/${g.slug}/">${esc(g.title)}</a></li>`).join("")}</ul>` : "");
+  return `<section class="hb hb-more" aria-labelledby="more-h"><div class="hb-blk t-${k}"><div class="hb-head"><div><h2 id="more-h">${same.length >= 4 ? `More ${esc(c.group.toLowerCase())} calculators` : "More calculators"}</h2><p>${esc(same.length >= 4 ? CAT_BLURB[c.group] || "" : "Popular calculators from across the site.")}</p></div><span class="hb-n" aria-hidden="true">${String(list.length).padStart(2, "0")}</span></div>
+  <ul class="hb-pills">${list.map(x => `<li><a class="hb-pill" href="${pathOf(x)}" title="${esc(x.lede)}"><i aria-hidden="true">${esc(x.ic)}</i>${esc(shortName(x))}</a></li>`).join("")}</ul>
+  <p class="hb-cats">Other categories: ${otherCats.map(g => `<a href="./#cat-${slugOf(g.name)}">${esc(g.name)}</a>`).join("")}</p></div></section>` +
+    (gl.length ? `<section class="howto related"><h2>Guides</h2><ul class="ticks">${gl.map(g => `<li><a href="guides/${g.slug}/">${esc(g.title)}</a></li>`).join("")}</ul></section>` : "");
 }
 
 function seo(c, isCalc) {
@@ -172,10 +178,12 @@ let n = 0;
     .replace("{{ANALYTICS}}", () => analytics).replace("{{ID}}", c.id).replace("{{NAV}}", () => navFor(c))
     .replace("{{SUPPORT}}", () => { const k = all.find(x => x.id === "coffee"); return `<div class="support"><a href="${pathOf(k)}" data-id="coffee"${c.id === "coffee" ? ' aria-current="page"' : ""}><span class="ic">${esc(k.ic)}</span><span class="lb">${esc(k.name)}</span></a></div>`; })
     .replace("{{H1}}", () => esc(c.name)).replace("{{LEDE}}", () => esc(c.lede))
+    .replace("{{BODYCLASS}}", isCalc ? ` class="cat-page t-${catKey(c.group)}"` : "")
+    .replace("{{CRUMB}}", () => isCalc ? `<p class="crumb"><a href="./">Home</a><span aria-hidden="true">›</span><a href="./#cat-${slugOf(c.group)}">${esc(c.group)}</a></p>` : "")
     .replace("{{PAGEHIDDEN}}", isCalc ? " hidden" : "").replace("{{PAGEHTML}}", () => isCalc ? "" : c.html)
     .split("{{WORKHIDDEN}}").join(isCalc ? "" : " hidden")
     .replace("{{FORMULA}}", () => isCalc ? c.formula : "").replace("{{HOWTO}}", () => isCalc ? guide(c) + howTo(c) : "")
-    .replace("{{RELATED}}", () => related(c))
+    .replace("{{RELATED}}", () => isCalc ? related(c) : "")
     .replace("{{AFFILIATE}}", () => isCalc ? affiliateBox(c) : "")
     .replace("{{AD1}}", () => isCalc ? adUnit() : "").replace("{{AD2}}", () => isCalc ? adUnit("wide") : "").replace("{{AD3}}", () => isCalc ? netBox() : "")
     .replace("{{ADSCRIPT}}", () => !AD_CLIENT && isCalc && customAds.head ? customAds.head : AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "");
@@ -237,7 +245,7 @@ ${netBox()}<section class="howto related"><h2>More guides</h2><ul class="ticks">
     .replace("{{BASE}}", `<base href="${new URL(SITE).pathname}">`)
     .replace("{{SEO}}", () => nfSeo).replace("{{ANALYTICS}}", () => analytics).replace("{{ID}}", nf.id).replace("{{NAV}}", () => navFor(nf))
     .replace("{{SUPPORT}}", () => { const k = all.find(x => x.id === "coffee"); return `<div class="support"><a href="${pathOf(k)}" data-id="coffee"><span class="ic">${esc(k.ic)}</span><span class="lb">${esc(k.name)}</span></a></div>`; })
-    .replace("{{H1}}", () => esc(nf.name)).replace("{{LEDE}}", () => esc(nf.lede))
+    .replace("{{H1}}", () => esc(nf.name)).replace("{{LEDE}}", () => esc(nf.lede)).replace("{{BODYCLASS}}", "").replace("{{CRUMB}}", "")
     .replace("{{PAGEHIDDEN}}", "").replace("{{PAGEHTML}}", () => nf.html).split("{{WORKHIDDEN}}").join(" hidden")
     .replace("{{FORMULA}}", "").replace("{{HOWTO}}", "").replace("{{RELATED}}", "").replace("{{AFFILIATE}}", "")
     .replace("{{AD1}}", "").replace("{{AD2}}", "").replace("{{AD3}}", "")

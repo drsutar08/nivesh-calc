@@ -35,7 +35,7 @@ label.f{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:13p
 .lot .n{font:700 11px var(--f-num);color:var(--surface);background:var(--c,var(--accent));border-radius:8px;height:26px;display:grid;place-items:center}
 .lot .amt{font:600 13px var(--f-num);text-align:right;color:var(--ink);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .lot-head .amt{font:700 11px var(--f-body);color:var(--muted)}
-.x{border:0;background:transparent;color:var(--muted);font-size:20px;line-height:1;border-radius:8px;width:30px;height:30px;cursor:pointer}
+.x{border:0;background:transparent;color:var(--muted);font-size:20px;line-height:1;border-radius:8px;width:30px;height:30px;cursor:pointer;flex:none}
 .x:hover:not(:disabled){color:var(--loss);background:var(--bg)}
 .x:disabled{opacity:.35;cursor:not-allowed}
 .chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
@@ -98,7 +98,7 @@ dd{margin:0;font:600 14px var(--f-num);text-align:right;font-variant-numeric:tab
 .prose{gap:12px}
 .prose p{margin:0;color:var(--muted);max-width:68ch}
 .prose h2{font:700 18px var(--f-display);letter-spacing:0;text-transform:none;color:var(--ink)}
-.prose a{color:var(--accent);font-weight:600}
+.prose a{color:var(--accent);font-weight:600;overflow-wrap:anywhere}
 .ticks{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
 .ticks li::before{content:"✓";color:var(--accent);font-weight:700;margin-right:8px}
 .risks{margin:0;padding:0;list-style:none;counter-reset:r;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -184,3 +184,23 @@ a.btn{text-decoration:none;display:inline-block}
 .card .d{display:block;color:var(--muted);font-size:13px;line-height:1.45}
 .home-cat .more{margin:0}
 .home-cat .more a{color:var(--accent);font-weight:600}
+
+/* Responsive: input fields go two-up when the inputs panel is wide (tablets, small laptops); one column on phones and beside the result on desktop */
+#form{container-type:inline-size}
+.fields{display:flex;flex-direction:column;gap:14px}
+@container (min-width:560px){
+  .fields:not(:has(.lot)){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px;align-items:end}
+  .fields label.f{min-width:0}
+  .fields .btns{grid-column:1/-1}
+}
+/* Touch screens: 16px inputs stop iOS Safari zooming in on tap; controls get finger-sized hit areas */
+@media (pointer:coarse){
+  .inp input,.inp select,.inp textarea,.search input{font-size:16px}
+  .theme{min-height:36px;padding:8px 14px}
+  .x{width:40px;height:40px}
+  .lot{grid-template-columns:30px minmax(0,1fr) minmax(0,1fr) minmax(70px,.8fr) 40px}
+  .logo{min-height:40px}
+}
+@media (pointer:coarse) and (max-width:420px){.lot{grid-template-columns:30px minmax(0,1fr) minmax(0,1fr) 40px}}
+/* Long words and URLs never push a page sideways */
+main,.gwrap{overflow-wrap:break-word}

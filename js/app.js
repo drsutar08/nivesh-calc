@@ -316,7 +316,7 @@ if(location.protocol==="file:") document.addEventListener("click",e=>{
   const a=e.target.closest&&e.target.closest("a[href]");
   if(a && a.href.startsWith("file:") && a.href.endsWith("/") && !e.defaultPrevented && e.button===0 && !e.metaKey && !e.ctrlKey){ e.preventDefault(); location.href=dest(a.href); }
 });
-if(here!=="home") render(here); // the homepage is a static intro page, not a calculator
+if([...CALCS,...PAGES].some(x=>x.id===here)) render(here); // the homepage and 404 page are static, not calculators
 
 // contact form: send through Formspree when configured, otherwise open the visitor's email app
 document.addEventListener("submit",async e=>{

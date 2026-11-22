@@ -120,6 +120,9 @@ function seo(c, isCalc) {
 const CAT_KEY = { "Stocks": "stocks", "Mutual funds": "funds", "Loans & growth": "growth", "Everyday": "everyday" };
 const CAT_BLURB = { "Stocks": "Averages, profit and loss, corporate actions, charges and tax on shares.", "Mutual funds": "Plan SIPs, lumpsums, withdrawals and your retirement corpus.", "Loans & growth": "EMIs, deposits, compounding and the effect of inflation.", "Everyday": "Quick percentage answers for everyday maths." };
 const catKey = name => CAT_KEY[name] || "stocks";
+// The category blocks with a pill link to every calculator (homepage and 404 page).
+const bento = () => { const cats = groups.filter(g => g.items.some(x => x.calc || x.lots)); return `<section class="hb-bento" id="calculators" aria-label="All calculators">${cats.map(g => { const k = catKey(g.name); return `<div class="hb-blk hb-${k} t-${k}" id="cat-${slugOf(g.name)}"><div class="hb-head"><div><h2>${esc(g.name)} calculators</h2><p>${esc(CAT_BLURB[g.name] || "")}</p></div><span class="hb-n" aria-hidden="true">${String(g.items.length).padStart(2, "0")}</span></div>
+  <ul class="hb-pills">${g.items.map(c => `<li><a class="hb-pill" href="${pathOf(c)}" title="${esc(c.lede)}"><i aria-hidden="true">${esc(c.ic)}</i>${esc(shortName(c))}</a></li>`).join("")}</ul></div>`; }).join("")}</section>`; };
 function home() {
   const cats = groups.filter(g => g.items.some(x => x.calc || x.lots));
   const latest = [...guides].sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 6);
@@ -139,8 +142,7 @@ function home() {
     <nav class="hb-pop" aria-labelledby="hb-pop-h"><h2 id="hb-pop-h">Most used</h2>${mostUsed.map(c => `<a class="t-${catKey(c.group)}" href="${pathOf(c)}">${esc(c.name)}<span aria-hidden="true">${esc(c.ic)}</span></a>`).join("")}</nav>
   </div>
 </section>
-<section class="hb-bento" id="calculators" aria-label="All calculators">${cats.map(g => { const k = catKey(g.name); return `<div class="hb-blk hb-${k} t-${k}" id="cat-${slugOf(g.name)}"><div class="hb-head"><div><h2>${esc(g.name)} calculators</h2><p>${esc(CAT_BLURB[g.name] || "")}</p></div><span class="hb-n" aria-hidden="true">${String(g.items.length).padStart(2, "0")}</span></div>
-  <ul class="hb-pills">${g.items.map(c => `<li><a class="hb-pill" href="${pathOf(c)}" title="${esc(c.lede)}"><i aria-hidden="true">${esc(c.ic)}</i>${esc(shortName(c))}</a></li>`).join("")}</ul></div>`; }).join("")}</section>
+${bento()}
 ${adUnit("wide")}
 <section class="hb-sec" aria-labelledby="hb-guides-h"><h2 id="hb-guides-h">Latest guides</h2><div class="hb-glist">${latest.map(g => { const n = guideCat(g); return `<a class="hb-g t-${catKey(n)}" href="guides/${g.slug}/"><span class="hb-dot" aria-hidden="true"></span><span><small>${esc(n)}</small><b>${esc(g.title)}</b><span>${esc(g.desc)}</span></span></a>`; }).join("")}</div><a class="hb-btn hb-alt hb-all" href="guides/">See all ${guides.length} guides →</a></section>
 <div class="hb-about"><span class="hb-av" aria-hidden="true">DS</span><p><b>Who builds Nivesh Calc.</b> Nivesh Calc is built and maintained by Diptiranjan Sutar, an investor and software developer based in India. Each formula is checked against worked examples before it goes live. The calculators are for education and planning, not investment advice. Read more <a href="about-us/">about the site</a> and the <a href="disclaimer/">disclaimer</a>.</p></div>
@@ -222,6 +224,25 @@ ${netBox()}<section class="howto related"><h2>More guides</h2><ul class="ticks">
     guides.map(g => `<a class="gcard" href="guides/${g.slug}/"><b>${esc(g.title)}</b><span>${esc(g.desc)}</span></a>`).join("") + adUnit("wide");
   const ld = [{ "@context": "https://schema.org", "@type": "CollectionPage", name: title, url, description: desc }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE }, { "@type": "ListItem", position: 2, name: "Guides", item: url }] }];
   writeGuide("guides", guideTemplate.replace("{{BASEHREF}}", "../").replace("{{SEO}}", () => guideSeo(title, desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "").replace("{{ANALYTICS}}", () => analytics).replace("{{BODY}}", () => body), "guides-index", url);
+}
+// 404 page: Cloudflare Pages serves /404.html with a real 404 status for any missing URL. Links resolve from the site root
+// because it can be shown at any depth; noindex and no canonical, and it is not in the sitemap.
+{
+  const nf = { id: "notfound", name: "Page not found", lede: "The page you asked for does not exist or has moved.",
+    html: `<div class="hb"><div class="hb-hello"><div class="hb-kick" aria-hidden="true">${Object.values(CAT_KEY).map(k => `<i class="t-${k}"></i>`).join("")}</div><p>The link may be old or mistyped. Every calculator is listed below, or start again from the homepage.</p><div class="hb-row"><a class="hb-btn hb-main" href="./">Go to the homepage</a><a class="hb-btn hb-alt" href="guides/">Read the guides</a></div></div>${bento()}</div>` };
+  const nfSeo = `<title>Page not found | ${SITE_NAME}</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="${esc(nf.lede)}">`;
+  const html = template
+    .replace("{{BASE}}", `<base href="${new URL(SITE).pathname}">`)
+    .replace("{{SEO}}", () => nfSeo).replace("{{ANALYTICS}}", () => analytics).replace("{{ID}}", nf.id).replace("{{NAV}}", () => navFor(nf))
+    .replace("{{SUPPORT}}", () => { const k = all.find(x => x.id === "coffee"); return `<div class="support"><a href="${pathOf(k)}" data-id="coffee"><span class="ic">${esc(k.ic)}</span><span class="lb">${esc(k.name)}</span></a></div>`; })
+    .replace("{{H1}}", () => esc(nf.name)).replace("{{LEDE}}", () => esc(nf.lede))
+    .replace("{{PAGEHIDDEN}}", "").replace("{{PAGEHTML}}", () => nf.html).split("{{WORKHIDDEN}}").join(" hidden")
+    .replace("{{FORMULA}}", "").replace("{{HOWTO}}", "").replace("{{RELATED}}", "").replace("{{AFFILIATE}}", "")
+    .replace("{{AD1}}", "").replace("{{AD2}}", "").replace("{{AD3}}", "")
+    .replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "");
+  fs.writeFileSync(path.join(root, "404.html"), html); n++;
 }
 // Web app manifest
 fs.writeFileSync(path.join(root, "site.webmanifest"), JSON.stringify({ name: "Nivesh Calc", short_name: "Nivesh Calc", description: "Free stock and investment calculators", start_url: "./", display: "standalone", background_color: "#f5f7f6", theme_color: "#0f7a55", icons: [{ src: "images/icon-192.png", sizes: "192x192", type: "image/png" }, { src: "images/icon-512.png", sizes: "512x512", type: "image/png" }] }, null, 2));

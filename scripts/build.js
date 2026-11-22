@@ -116,19 +116,35 @@ function seo(c, isCalc) {
 <script type="application/ld+json">${JSON.stringify(ld)}</script>`;
 }
 
-// Homepage: an introduction to the site that links every calculator by category and the latest guides.
+// Homepage ("colour blocks" design): intro panel, stat tiles, most-used list, one gradient block per category, latest guides.
+const CAT_KEY = { "Stocks": "stocks", "Mutual funds": "funds", "Loans & growth": "growth", "Everyday": "everyday" };
+const CAT_BLURB = { "Stocks": "Averages, profit and loss, corporate actions, charges and tax on shares.", "Mutual funds": "Plan SIPs, lumpsums, withdrawals and your retirement corpus.", "Loans & growth": "EMIs, deposits, compounding and the effect of inflation.", "Everyday": "Quick percentage answers for everyday maths." };
+const catKey = name => CAT_KEY[name] || "stocks";
 function home() {
   const cats = groups.filter(g => g.items.some(x => x.calc || x.lots));
   const latest = [...guides].sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 6);
-  const card = (href, ic, title, text) => `<a class="card" href="${href}">${ic ? `<span class="ic" aria-hidden="true">${esc(ic)}</span>` : ""}<span><b>${esc(title)}</b><span class="d">${esc(text)}</span></span></a>`;
-  const html = `<div class="panel prose wide"><h2>What is Nivesh Calc?</h2>
-<p>Nivesh Calc is a free set of calculators for people who invest in Indian stocks and mutual funds. Use it to work out your average buy price after averaging down, your real profit after brokerage and taxes, what a split, bonus, buyback or demerger does to your holding, and how a SIP, lumpsum or SWP plan could grow.</p>
-<ul class="ticks"><li>Free, with no sign-up and no app to install</li><li>Runs in your browser, so the numbers you enter stay on your device</li><li>Every calculator shows the formula it uses and a worked example</li></ul></div>
-${cats.map(g => `<section class="home-cat" aria-labelledby="cat-${slugOf(g.name)}"><h2 id="cat-${slugOf(g.name)}">${esc(g.name)} calculators <span>${g.items.length}</span></h2><div class="cards">${g.items.map(x => card(pathOf(x), x.ic, x.name, x.lede)).join("")}</div></section>`).join("\n")}
-${adUnit("wide")}
-<section class="home-cat" aria-labelledby="cat-guides"><h2 id="cat-guides">Latest guides</h2><div class="cards">${latest.map(g => card(`guides/${g.slug}/`, "", g.title, g.desc)).join("")}</div><p class="more"><a href="guides/">See all ${guides.length} guides →</a></p></section>
-<div class="panel prose wide"><h2>Who builds Nivesh Calc</h2><p>Nivesh Calc is built and maintained by Diptiranjan Sutar, an investor and software developer based in India. Each formula is checked against worked examples before it goes live. The calculators are for education and planning, not investment advice. Read more <a href="about-us/">about the site</a> and the <a href="disclaimer/">disclaimer</a>.</p></div>`;
+  const mostUsed = ["average", "sip", "brokerage", "emi", "capital-gains"].map(id => CALCS.find(c => c.id === id)).filter(Boolean);
+  const guideCat = g => { const c = CALCS.find(x => x.id === g.calcs[0]); return c ? c.group : "Stocks"; };
   const nCalc = CALCS.length;
+  const html = `<div class="hb">
+<section class="hb-intro">
+  <div class="hb-hello">
+    <div class="hb-kick" aria-hidden="true">${Object.values(CAT_KEY).map(k => `<i class="t-${k}"></i>`).join("")}</div>
+    <h1>Free stock market and <span>investment</span> calculators for India</h1>
+    <p>Work out your average buy price, your real profit after brokerage and tax, what a split, bonus, buyback or demerger does to your holding, and how a SIP, lumpsum or SWP could grow. No sign-up, and nothing you type leaves your browser.</p>
+    <div class="hb-row"><a class="hb-btn hb-main" href="#calculators">Browse ${nCalc} calculators ↓</a><a class="hb-btn hb-alt" href="guides/">Read the guides</a></div>
+  </div>
+  <div class="hb-side">
+    <div class="hb-stats"><div class="hb-st t-stocks"><b>${nCalc}</b><small>calculators</small></div><div class="hb-st t-funds"><b>${guides.length}</b><small>guides</small></div><div class="hb-st t-growth"><b>₹0</b><small>always free</small></div><div class="hb-st t-everyday"><b>0</b><small>data sent anywhere</small></div></div>
+    <nav class="hb-pop" aria-labelledby="hb-pop-h"><h2 id="hb-pop-h">Most used</h2>${mostUsed.map(c => `<a class="t-${catKey(c.group)}" href="${pathOf(c)}">${esc(c.name)}<span aria-hidden="true">${esc(c.ic)}</span></a>`).join("")}</nav>
+  </div>
+</section>
+<section class="hb-bento" id="calculators" aria-label="All calculators">${cats.map(g => { const k = catKey(g.name); return `<div class="hb-blk hb-${k} t-${k}" id="cat-${slugOf(g.name)}"><div class="hb-head"><div><h2>${esc(g.name)} calculators</h2><p>${esc(CAT_BLURB[g.name] || "")}</p></div><span class="hb-n" aria-hidden="true">${String(g.items.length).padStart(2, "0")}</span></div>
+  <ul class="hb-pills">${g.items.map(c => `<li><a class="hb-pill" href="${pathOf(c)}" title="${esc(c.lede)}"><i aria-hidden="true">${esc(c.ic)}</i>${esc(shortName(c))}</a></li>`).join("")}</ul></div>`; }).join("")}</section>
+${adUnit("wide")}
+<section class="hb-sec" aria-labelledby="hb-guides-h"><h2 id="hb-guides-h">Latest guides</h2><div class="hb-glist">${latest.map(g => { const n = guideCat(g); return `<a class="hb-g t-${catKey(n)}" href="guides/${g.slug}/"><span class="hb-dot" aria-hidden="true"></span><span><small>${esc(n)}</small><b>${esc(g.title)}</b><span>${esc(g.desc)}</span></span></a>`; }).join("")}</div><a class="hb-btn hb-alt hb-all" href="guides/">See all ${guides.length} guides →</a></section>
+<div class="hb-about"><span class="hb-av" aria-hidden="true">DS</span><p><b>Who builds Nivesh Calc.</b> Nivesh Calc is built and maintained by Diptiranjan Sutar, an investor and software developer based in India. Each formula is checked against worked examples before it goes live. The calculators are for education and planning, not investment advice. Read more <a href="about-us/">about the site</a> and the <a href="disclaimer/">disclaimer</a>.</p></div>
+</div>`;
   return {
     id: "home", name: "Free Stock Market and Investment Calculators for India", html,
     lede: `${nCalc} free calculators for Indian investors: stock average, profit and loss, corporate actions, brokerage, capital gains tax, SIP, SWP, EMI and more.`,
@@ -148,7 +164,7 @@ let n = 0;
 [home(), ...all].forEach(c => {
   const isCalc = !!(c.calc || c.lots);
   const depth = c.id === "home" ? 0 : 1;
-  const html = template
+  let html = template
     .replace("{{BASE}}", depth ? '<base href="../">' : "")
     .replace("{{SEO}}", () => seo(c, isCalc))
     .replace("{{ANALYTICS}}", () => analytics).replace("{{ID}}", c.id).replace("{{NAV}}", () => navFor(c))
@@ -161,6 +177,7 @@ let n = 0;
     .replace("{{AFFILIATE}}", () => isCalc ? affiliateBox(c) : "")
     .replace("{{AD1}}", () => isCalc ? adUnit() : "").replace("{{AD2}}", () => isCalc ? adUnit("wide") : "").replace("{{AD3}}", () => isCalc ? netBox() : "")
     .replace("{{ADSCRIPT}}", () => !AD_CLIENT && isCalc && customAds.head ? customAds.head : AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "");
+  if (c.id === "home") html = html.replace(/<header>[\s\S]*?<\/header>\s*/, ""); // the homepage carries its own h1 inside the intro panel
   const out = c.id === "home" ? path.join(root, "index.html") : path.join(root, pathOf(c), "index.html");
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, html); n++;

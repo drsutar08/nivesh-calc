@@ -45,9 +45,12 @@ const pubMeta = PUB ? `<meta name="google-adsense-account" content="${PUB}">
 const analytics = pubMeta + (CF_BEACON ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "${CF_BEACON}"}'></script>` :
   GA_ID ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date());gtag("config","${GA_ID}");</script>` : "");
 const guides = require("./guides.js");
-const guideTemplate = fs.readFileSync(path.join(__dirname, "guide-template.html"), "utf8");
+// Cache-busting: js/ and css/ are cached for a day, so each link carries a hash of the file. A changed file gets a new URL and browsers fetch it at once.
+const assetVer = f => require("crypto").createHash("md5").update(fs.readFileSync(path.join(root, f))).digest("hex").slice(0, 8);
+const versioned = t => t.split('href="css/styles.css"').join(`href="css/styles.css?v=${assetVer("css/styles.css")}"`).split('src="js/app.js"').join(`src="js/app.js?v=${assetVer("js/app.js")}"`);
+const guideTemplate = versioned(fs.readFileSync(path.join(__dirname, "guide-template.html"), "utf8"));
 const OG_IMAGE = SITE + "images/og-image.png";
-const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
+const template = versioned(fs.readFileSync(path.join(__dirname, "template.html"), "utf8"));
 const all = [...CALCS, ...PAGES];
 const urlOf = c => SITE + (c.id === "home" ? "" : pathOf(c));
 

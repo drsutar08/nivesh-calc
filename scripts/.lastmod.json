@@ -1,150 +1,150 @@
 {
  "average": {
-  "h": "32891c8a80e3707b2f4a66f46d59f5d9",
+  "h": "e21c7ae1da0d4cc585ee329411f30a9a",
   "d": "2026-11-22"
  },
  "profit-loss": {
-  "h": "26bd2c9fb2bd9228725fa44cd4d5dc38",
+  "h": "7823dd8a165d5aa521535a00b150680e",
   "d": "2026-11-22"
  },
  "split": {
-  "h": "fa8b66dd173bfe7712041e8b360b6647",
+  "h": "a64c8f0aa2ba1372019937389e5f2dfb",
   "d": "2026-11-22"
  },
  "bonus": {
-  "h": "45413780bf822b21334e82cc2ac676c1",
+  "h": "5825e707f50ecba297b30693f14e81f1",
   "d": "2026-11-22"
  },
  "dividend": {
-  "h": "e09bce1f5f3b17558f1cd740c380c705",
+  "h": "8096ecd1c57e30aa6ca65858f6020f0d",
   "d": "2026-11-22"
  },
  "buyback": {
-  "h": "dc09f754d7bdc6d8134c06cbf2b9775f",
+  "h": "dd308074e776ec5d9ea7f677f468b463",
   "d": "2026-11-22"
  },
  "demerger": {
-  "h": "3319e7688f17bf9d36319ece2378652b",
+  "h": "f72eee259af10fb692783874cdd6becb",
   "d": "2026-11-22"
  },
  "brokerage": {
-  "h": "62ab6d1471bc2aacf7304c1db0d0b90e",
+  "h": "05ee50df02b86d9e1422b51fc0c1f122",
   "d": "2026-11-22"
  },
  "capital-gains": {
-  "h": "ad5fe5011f64601090dd7fbe7ce1f898",
+  "h": "63ae65d3eb941c3dd7b03ed5943965e5",
   "d": "2026-11-22"
  },
  "position-size": {
-  "h": "73b49c679e6ccb21f214bf16a9e12c20",
+  "h": "6280d6ebb3218548bf7ecd9fec2a98e4",
   "d": "2026-11-22"
  },
  "sip": {
-  "h": "89bd5068d81a613115cef4dd6b3af016",
+  "h": "df4c4c3cda82c5017c28ee28519953a5",
   "d": "2026-11-22"
  },
  "stepup-sip": {
-  "h": "b3ae021ad5dd14a049c2c9d6bf6b5582",
+  "h": "88e4f2a247c4f90fd5a6f3b4add7b258",
   "d": "2026-11-22"
  },
  "goal-planner": {
-  "h": "947e3dffffdfa560b8c0bc1491659782",
+  "h": "7d8f33355d18368ee71f265eca78724a",
   "d": "2026-11-22"
  },
  "lumpsum": {
-  "h": "bb2f7bf77268afc83b67b02aaa2bd1c1",
+  "h": "dd82e52ae2eeea355dda0f26d29f1003",
   "d": "2026-11-22"
  },
  "swp": {
-  "h": "b3a36c53e754f4cb58aec398af536954",
+  "h": "f40289d3c8f32d433be62e3ba24e6975",
   "d": "2026-11-22"
  },
  "retirement": {
-  "h": "44c5c27593daf5817e8162622544c7c5",
+  "h": "74c138d90c9a2ddea1e4b5bf22cae895",
   "d": "2026-11-22"
  },
  "emi": {
-  "h": "c393f10483772ffd578701a26326a0c7",
+  "h": "bffb19d527d00b2609ac1beaac3479f7",
   "d": "2026-11-22"
  },
  "cagr": {
-  "h": "9fab1b7d70cbd5202e0f1d8e61d554c3",
+  "h": "c79604afb0f39e06ceab556334f065b6",
   "d": "2026-11-22"
  },
  "rule-of-72": {
-  "h": "0e88d8f2b1223608a854207d824ee2d4",
+  "h": "3c354f03fbfe5c86772249dd68fac4ea",
   "d": "2026-11-22"
  },
  "fd": {
-  "h": "8ec55df4acde4c4004784204cd9a1935",
+  "h": "9dee140ea2f4a4582cfeee62f3966eab",
   "d": "2026-11-22"
  },
  "rd": {
-  "h": "bdac917925665097094a80e1a2e286a9",
+  "h": "e841f5c5d006d393c66bebad5deaa14e",
   "d": "2026-11-22"
  },
  "inflation": {
-  "h": "d1dd81b8508e4b6b8c0f0812e1cdd202",
+  "h": "fcc2e7ddc032273bc5f457b7f9b76b5c",
   "d": "2026-11-22"
  },
  "percentage": {
-  "h": "644a73a23b18b06e631317654ea70f2d",
+  "h": "7812e681e4ce9be3120528933980d141",
   "d": "2026-11-22"
  },
  "about": {
-  "h": "ebfba9a625b4899e60c774bd9a1dd901",
+  "h": "245f1050ae0769e21048f06e9450a7e1",
   "d": "2026-11-22"
  },
  "contact": {
-  "h": "8aae3d667381cc8a0417995fe37b91db",
+  "h": "b6265d893b453be6cd562900ce2782b4",
   "d": "2026-11-22"
  },
  "coffee": {
-  "h": "c703016df7b1896258cbc1ac2f95d355",
+  "h": "292ace51b71ab09b1a107a3bfbb03bf8",
   "d": "2026-11-22"
  },
  "privacy": {
-  "h": "787f6cbd70aac35ee475d0b991811b2c",
+  "h": "777fca00fee4f7c73df41137be150846",
   "d": "2026-11-22"
  },
  "disclaimer": {
-  "h": "a55b7f5a67da8beecb771476b0c55d0e",
+  "h": "3d85db34c7ab20c7f8dceee72b31932b",
   "d": "2026-11-22"
  },
  "guide:how-is-sip-return-calculated": {
-  "h": "73e9cc89d6dd0f78e7220464dd7c5e7f",
+  "h": "77444d6d121951596433cccc28827779",
   "d": "2026-11-22"
  },
  "guide:sip-vs-lumpsum": {
-  "h": "fb6707e0d4a67633f88f67e925241029",
+  "h": "a3ef47d3896c58dd9ab91c676c95b311",
   "d": "2026-11-22"
  },
  "guide:ltcg-vs-stcg-on-shares-india": {
-  "h": "c7d276e9ff00846f2ad579b044f9c46e",
+  "h": "aea3a0fadcdcd7b81a75c2b3e386238c",
   "d": "2026-11-22"
  },
  "guide:how-much-do-i-need-to-retire": {
-  "h": "1bb314a2c60f0c5f767d20d57e5f8889",
+  "h": "f202d39fef1da0639f4073280b2d8f27",
   "d": "2026-11-22"
  },
  "guides-index": {
-  "h": "485f9ac9948d2e119da9555ba580c229",
+  "h": "148d9132b79cc9b7bae453a01e923c4b",
   "d": "2026-11-22"
  },
  "guide:what-is-cagr-and-how-to-calculate-it": {
-  "h": "e51e6e47e584b33aac7c29dbfb413d53",
+  "h": "1480326875f52b19e7df1f9d187bfff4",
   "d": "2026-11-22"
  },
  "guide:how-emi-is-calculated": {
-  "h": "7aac095a80a0e9c4693b1caf2c4bd07b",
+  "h": "0b6e2633516afcfaf892495705dcc52e",
   "d": "2026-11-22"
  },
  "guide:fd-vs-rd": {
-  "h": "41d3c06041d6a13ff2bd15037a94d523",
+  "h": "789e4a159f0dedec5b1f11bddba26f0d",
   "d": "2026-11-22"
  },
  "home": {
-  "h": "6772e0e4f833c594b6dd24e738821611",
+  "h": "9f53e04656b3f0ffcdee2555118baa4e",
   "d": "2026-11-22"
  }
 }

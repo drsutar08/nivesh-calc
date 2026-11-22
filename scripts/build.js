@@ -15,17 +15,9 @@ const PUB = AD_CLIENT_ENV || customAds.publisher || "";
 const AD_SLOT = AD_SLOT_ENV || customAds.slotId || ""; // ad unit ID (digits) from AdSense: Ads > By ad unit > Display ads
 const AD_CLIENT = customAds.off ? "" : PUB;
 const AD_WIDE_SLOT = process.env.ADSENSE_SLOT_WIDE || customAds.slotIdWide || ""; // horizontal banner unit ID
-const AD_TALL_SLOT = process.env.ADSENSE_SLOT_TALL || customAds.slotIdTall || ""; // vertical (skyscraper) unit ID, shown in a side rail on wide screens only
-const adRail = () => AD_CLIENT && AD_TALL_SLOT && !customAds.off ? `<div class="ad-rail" role="complementary" aria-label="Advertisement"><small>Advertisement</small><ins class="adsbygoogle" style="display:block" data-ad-client="${AD_CLIENT}" data-ad-slot="${AD_TALL_SLOT}" data-ad-format="vertical" data-full-width-responsive="false"></ins><script>(function(){var e=document.currentScript.previousElementSibling;if(e.offsetWidth>0)(adsbygoogle=window.adsbygoogle||[]).push({})})()</script></div>` : "";
 // Second ad network, fixed 300x250 iframe banner. Set in ads.json: "net300": {"key": "...", "host": "https://host.example"}; remove it to turn it off.
 const net = customAds.net300 || {};
-const netBox = () => net.key && String(net.host || "").startsWith("https://") && !customAds.off ? `<div class="adx"><small>Advertisement</small><script>atOptions={'key':'${net.key}','format':'iframe','height':250,'width':300,'params':{}};</script><script src="${net.host}/22/${net.key}"></script></div>` : "";
-// Same network, 160x600 skyscraper on the left edge of wide screens. The code is only written into the page when the screen is wide enough, so narrow screens never load it.
-const net160 = customAds.net160 || {};
-const netLeft = (minW) => net160.key && String(net160.host || "").startsWith("https://") && !customAds.off ? `<div class="adl"><small>Advertisement</small><script>if(window.innerWidth>=${minW}){atOptions={'key':'${net160.key}','format':'iframe','height':600,'width':160,'params':{}};document.write('<script src="${net160.host}/22/${net160.key}"><\\/script>')}</script></div>` : "";
-// Same network, 728x90 leaderboard. Needs a 728px-wide content area, so the code is only written into the page on screens wide enough.
-const net728 = customAds.net728 || {};
-const netBanner = (minW) => net728.key && String(net728.host || "").startsWith("https://") && !customAds.off ? `<div class="adx wide728"><small>Advertisement</small><script>if(window.innerWidth>=${minW}){atOptions={'key':'${net728.key}','format':'iframe','height':90,'width':728,'params':{}};document.write('<script src="${net728.host}/22/${net728.key}"><\\/script>')}</script></div>` : "";
+const netBox = () => net.key && String(net.host || "").startsWith("https://") && !customAds.off ? `<div class="adx"><script>atOptions={'key':'${net.key}','format':'iframe','height':250,'width':300,'params':{}};</script><script src="${net.host}/22/${net.key}"></script></div>` : "";
 const adUnit = (kind) => {
   const wide = kind === "wide" && AD_WIDE_SLOT, slot = wide ? AD_WIDE_SLOT : AD_SLOT;
   if (!AD_CLIENT && customAds.slot) return `<div class="ad"><small>Advertisement</small>${customAds.slot}</div>`;
@@ -36,7 +28,7 @@ const adUnit = (kind) => {
 // Load the calculator definitions straight from js/app.js (everything before the UI code).
 const src = fs.readFileSync(path.join(root, "js/app.js"), "utf8");
 const head = src.slice(0, src.indexOf("const LOT_COLORS"));
-const { CALCS, PAGES, pathOf } = new Function(head + "; return {CALCS,PAGES,pathOf};")();
+const { CALCS, PAGES, pathOf, slugOf } = new Function(head + "; return {CALCS,PAGES,pathOf,slugOf};")();
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const content = Object.assign({}, require("./content.js"), require("./content-more.js"));
 const affFile = process.env.AFFILIATES_FILE || path.join(__dirname, "affiliates.json");
@@ -57,7 +49,7 @@ const guideTemplate = fs.readFileSync(path.join(__dirname, "guide-template.html"
 const OG_IMAGE = SITE + "images/og-image.png";
 const template = fs.readFileSync(path.join(__dirname, "template.html"), "utf8");
 const all = [...CALCS, ...PAGES];
-const urlOf = c => SITE + (c.id === "average" ? "" : pathOf(c));
+const urlOf = c => SITE + (c.id === "home" ? "" : pathOf(c));
 
 const groups = [];
 all.filter(c => c.id !== "coffee").forEach(c => { let g = groups.find(x => x.name === c.group); if (!g) groups.push(g = { name: c.group, items: [] }); g.items.push(c); });
@@ -91,16 +83,17 @@ function related(c) {
 
 function seo(c, isCalc) {
   const url = urlOf(c);
-  const title = c.id === "average" ? `Stock Average Calculator – Free Online Tools for Investors | ${SITE_NAME}` :
-    isCalc ? `${c.name} – Free Online Calculator | ${SITE_NAME}` : `${c.name} | ${SITE_NAME}`;
-  const desc = isCalc ? `${c.lede} Free ${c.name.toLowerCase()} with instant results, a clear formula and no sign-up.` : `${c.lede} ${SITE_NAME}: free stock and investment calculators.`;
+  const title = c.id === "home" ? c.title : isCalc ? `${c.name} – Free Online Calculator | ${SITE_NAME}` : `${c.name} | ${SITE_NAME}`;
+  const desc = c.id === "home" ? c.desc : isCalc ? `${c.lede} Free ${c.name.toLowerCase()} with instant results, a clear formula and no sign-up.` : `${c.lede} ${SITE_NAME}: free stock and investment calculators.`;
   const ld = [{
     "@context": "https://schema.org", "@type": isCalc ? "WebApplication" : "WebPage", name: c.name, url, description: c.lede,
     ...(isCalc ? { applicationCategory: "FinanceApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, inLanguage: "en-IN" } : {})
   }, {
     "@context": "https://schema.org", "@type": "BreadcrumbList",
-    itemListElement: [{ "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE }].concat(c.id === "average" ? [] : [{ "@type": "ListItem", position: 2, name: c.name, item: url }])
+    itemListElement: [{ "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE }].concat(c.id === "home" ? [] : [{ "@type": "ListItem", position: 2, name: c.name, item: url }])
   }];
+  if (c.id === "home") ld.splice(0, 1, { "@context": "https://schema.org", "@type": "WebSite", name: SITE_NAME, url: SITE, description: c.desc, inLanguage: "en-IN", publisher: { "@type": "Organization", name: SITE_NAME, url: SITE, logo: SITE + "images/icon-512.png" } },
+    { "@context": "https://schema.org", "@type": "ItemList", name: "Calculators", itemListElement: CALCS.map((x, i) => ({ "@type": "ListItem", position: i + 1, name: x.name, url: SITE + pathOf(x) })) });
   if (content[c.id]) ld.push({ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: content[c.id].faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) });
   return `<title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
@@ -120,6 +113,27 @@ function seo(c, isCalc) {
 <script type="application/ld+json">${JSON.stringify(ld)}</script>`;
 }
 
+// Homepage: an introduction to the site that links every calculator by category and the latest guides.
+function home() {
+  const cats = groups.filter(g => g.items.some(x => x.calc || x.lots));
+  const latest = [...guides].sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 6);
+  const card = (href, ic, title, text) => `<a class="card" href="${href}">${ic ? `<span class="ic" aria-hidden="true">${esc(ic)}</span>` : ""}<span><b>${esc(title)}</b><span class="d">${esc(text)}</span></span></a>`;
+  const html = `<div class="panel prose wide"><h2>What is Nivesh Calc?</h2>
+<p>Nivesh Calc is a free set of calculators for people who invest in Indian stocks and mutual funds. Use it to work out your average buy price after averaging down, your real profit after brokerage and taxes, what a split, bonus, buyback or demerger does to your holding, and how a SIP, lumpsum or SWP plan could grow.</p>
+<ul class="ticks"><li>Free, with no sign-up and no app to install</li><li>Runs in your browser, so the numbers you enter stay on your device</li><li>Every calculator shows the formula it uses and a worked example</li></ul></div>
+${cats.map(g => `<section class="home-cat" aria-labelledby="cat-${slugOf(g.name)}"><h2 id="cat-${slugOf(g.name)}">${esc(g.name)} calculators <span>${g.items.length}</span></h2><div class="cards">${g.items.map(x => card(pathOf(x), x.ic, x.name, x.lede)).join("")}</div></section>`).join("\n")}
+${adUnit("wide")}
+<section class="home-cat" aria-labelledby="cat-guides"><h2 id="cat-guides">Latest guides</h2><div class="cards">${latest.map(g => card(`guides/${g.slug}/`, "", g.title, g.desc)).join("")}</div><p class="more"><a href="guides/">See all ${guides.length} guides →</a></p></section>
+<div class="panel prose wide"><h2>Who builds Nivesh Calc</h2><p>Nivesh Calc is built and maintained by Diptiranjan Sutar, an investor and software developer based in India. Each formula is checked against worked examples before it goes live. The calculators are for education and planning, not investment advice. Read more <a href="about-us/">about the site</a> and the <a href="disclaimer/">disclaimer</a>.</p></div>`;
+  const nCalc = CALCS.length;
+  return {
+    id: "home", name: "Free Stock Market and Investment Calculators for India", html,
+    lede: `${nCalc} free calculators for Indian investors: stock average, profit and loss, corporate actions, brokerage, capital gains tax, SIP, SWP, EMI and more.`,
+    title: `${SITE_NAME} – Free Stock Market & Investment Calculators for India`,
+    desc: `${nCalc} free calculators for Indian investors: stock average, profit/loss, split, bonus, buyback, brokerage, capital gains tax, SIP, SWP and EMI. No sign-up.`,
+  };
+}
+
 const lmFile = path.join(__dirname, ".lastmod.json");
 const lm = fs.existsSync(lmFile) ? JSON.parse(fs.readFileSync(lmFile, "utf8")) : {};
 const today = new Date().toISOString().slice(0, 10);
@@ -128,13 +142,13 @@ const crypto = require("crypto");
 const stamp = (key, html) => { const h = crypto.createHash("md5").update(html).digest("hex"); if (!lm[key] || lm[key].h !== h) lm[key] = { h, d: today }; return lm[key].d; };
 const sitemap = [];
 let n = 0;
-all.forEach(c => {
+[home(), ...all].forEach(c => {
   const isCalc = !!(c.calc || c.lots);
-  const depth = c.id === "average" ? 0 : 1;
+  const depth = c.id === "home" ? 0 : 1;
   const html = template
     .replace("{{BASE}}", depth ? '<base href="../">' : "")
     .replace("{{SEO}}", () => seo(c, isCalc))
-    .replace("{{ANALYTICS}}", () => analytics).replace("{{ADRAIL}}", () => adRail()).replace("{{ADLEFT}}", () => netLeft(1700)).replace("{{ID}}", c.id).replace("{{NAV}}", () => navFor(c))
+    .replace("{{ANALYTICS}}", () => analytics).replace("{{ID}}", c.id).replace("{{NAV}}", () => navFor(c))
     .replace("{{SUPPORT}}", () => { const k = all.find(x => x.id === "coffee"); return `<div class="support"><a href="${pathOf(k)}" data-id="coffee"${c.id === "coffee" ? ' aria-current="page"' : ""}><span class="ic">${esc(k.ic)}</span><span class="lb">${esc(k.name)}</span></a></div>`; })
     .replace("{{H1}}", () => esc(c.name)).replace("{{LEDE}}", () => esc(c.lede))
     .replace("{{PAGEHIDDEN}}", isCalc ? " hidden" : "").replace("{{PAGEHTML}}", () => isCalc ? "" : c.html)
@@ -142,9 +156,9 @@ all.forEach(c => {
     .replace("{{FORMULA}}", () => isCalc ? c.formula : "").replace("{{HOWTO}}", () => isCalc ? guide(c) + howTo(c) : "")
     .replace("{{RELATED}}", () => related(c))
     .replace("{{AFFILIATE}}", () => isCalc ? affiliateBox(c) : "")
-    .replace("{{AD1}}", () => adUnit()).replace("{{AD2}}", () => adUnit("wide")).replace("{{AD3}}", () => netBox()).replace("{{AD4}}", () => netBanner(1040))
+    .replace("{{AD1}}", () => isCalc ? adUnit() : "").replace("{{AD2}}", () => isCalc ? adUnit("wide") : "").replace("{{AD3}}", () => isCalc ? netBox() : "")
     .replace("{{ADSCRIPT}}", () => !AD_CLIENT && isCalc && customAds.head ? customAds.head : AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "");
-  const out = c.id === "average" ? path.join(root, "index.html") : path.join(root, pathOf(c), "index.html");
+  const out = c.id === "home" ? path.join(root, "index.html") : path.join(root, pathOf(c), "index.html");
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, html); n++;
   sitemap.push([urlOf(c), stamp(c.id, html)]);
@@ -172,20 +186,20 @@ guides.forEach(g => {
   const url = guideUrl(g);
   const body = `<header><p class="gmeta"><a href="guides/">Guides</a> · By <a href="about-us/">Diptiranjan Sutar</a> · Last updated ${g.updated}</p><h1>${esc(g.title)}</h1><p class="lede">${esc(g.desc)}</p></header>
 <article>${g.sections.map((s, i) => (i === 2 ? adUnit() : "") + `<h2>${esc(s.h)}</h2>${s.p.map(p => /^[A-Za-z ]+ = /.test(p) ? `<p class="formula">${esc(p)}</p>` : `<p>${esc(p)}</p>`).join("")}`).join("")}
-${netBanner(800)}<h2>Frequently asked questions</h2>${g.faq.map(([q, a]) => `<h3 class="faq-q">${esc(q)}</h3><p>${esc(a)}</p>`).join("")}</article>
+<h2>Frequently asked questions</h2>${g.faq.map(([q, a]) => `<h3 class="faq-q">${esc(q)}</h3><p>${esc(a)}</p>`).join("")}</article>
 ${adUnit("wide")}<section class="howto"><h2>Try the calculators</h2><ul class="ticks">${calcLinks(g.calcs).map(x => `<li><a href="${pathOf(x)}">${esc(x.name)}</a> – ${esc(x.lede)}</li>`).join("")}</ul></section>
 ${netBox()}<section class="howto related"><h2>More guides</h2><ul class="ticks">${guides.filter(x => x !== g).map(x => `<li><a href="guides/${x.slug}/">${esc(x.title)}</a></li>`).join("")}</ul></section>`;
   const ld = [{ "@context": "https://schema.org", "@type": "Article", headline: g.title, description: g.desc, url, dateModified: g.updated, datePublished: g.updated, inLanguage: "en-IN", mainEntityOfPage: url, image: OG_IMAGE, author: { "@type": "Person", name: "Diptiranjan Sutar", url: SITE + "about-us/" }, publisher: { "@type": "Organization", name: SITE_NAME, url: SITE, logo: { "@type": "ImageObject", url: SITE + "images/icon-512.png" } } },
     { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE }, { "@type": "ListItem", position: 2, name: "Guides", item: SITE + "guides/" }, { "@type": "ListItem", position: 3, name: g.title, item: url }] },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: g.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) }];
-  writeGuide("guides/" + g.slug, guideTemplate.replace("{{BASEHREF}}", "../../").replace("{{SEO}}", () => guideSeo(g.title, g.desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "").replace("{{ANALYTICS}}", () => analytics).replace("{{ADRAIL}}", () => adRail()).replace("{{ADLEFT}}", () => netLeft(1300)).replace("{{BODY}}", () => body), "guide:" + g.slug, url);
+  writeGuide("guides/" + g.slug, guideTemplate.replace("{{BASEHREF}}", "../../").replace("{{SEO}}", () => guideSeo(g.title, g.desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "").replace("{{ANALYTICS}}", () => analytics).replace("{{BODY}}", () => body), "guide:" + g.slug, url);
 });
 {
   const url = SITE + "guides/", title = "Investing Guides for India", desc = "Plain-language guides on SIPs, lumpsum investing, capital gains tax and retirement planning, each linked to a free calculator.";
   const body = `<header><p class="gmeta"><a href="./">Nivesh Calc</a></p><h1>${title}</h1><p class="lede">${desc}</p></header>` +
     guides.map(g => `<a class="gcard" href="guides/${g.slug}/"><b>${esc(g.title)}</b><span>${esc(g.desc)}</span></a>`).join("") + adUnit("wide");
   const ld = [{ "@context": "https://schema.org", "@type": "CollectionPage", name: title, url, description: desc }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE }, { "@type": "ListItem", position: 2, name: "Guides", item: url }] }];
-  writeGuide("guides", guideTemplate.replace("{{BASEHREF}}", "../").replace("{{SEO}}", () => guideSeo(title, desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "").replace("{{ANALYTICS}}", () => analytics).replace("{{ADRAIL}}", () => adRail()).replace("{{ADLEFT}}", () => netLeft(1300)).replace("{{BODY}}", () => body), "guides-index", url);
+  writeGuide("guides", guideTemplate.replace("{{BASEHREF}}", "../").replace("{{SEO}}", () => guideSeo(title, desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "").replace("{{ANALYTICS}}", () => analytics).replace("{{BODY}}", () => body), "guides-index", url);
 }
 // Web app manifest
 fs.writeFileSync(path.join(root, "site.webmanifest"), JSON.stringify({ name: "Nivesh Calc", short_name: "Nivesh Calc", description: "Free stock and investment calculators", start_url: "./", display: "standalone", background_color: "#f5f7f6", theme_color: "#0f7a55", icons: [{ src: "images/icon-192.png", sizes: "192x192", type: "image/png" }, { src: "images/icon-512.png", sizes: "512x512", type: "image/png" }] }, null, 2));

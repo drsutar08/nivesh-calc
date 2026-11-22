@@ -4,7 +4,7 @@ const pct = (v,d=2)=> isFinite(v) ? v.toFixed(d) + "%" : "—";
 const sign = v => v>0 ? "gain" : v<0 ? "loss" : "";
 
 const slugOf = n => n.toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
-const pathOf = c => c.id==="average" ? "./" : (c.id==="about"?"about-us":c.id==="contact"?"contact-us":slugOf(c.name))+"/";
+const pathOf = c => c.id==="home" ? "./" : (c.id==="about"?"about-us":c.id==="contact"?"contact-us":slugOf(c.name))+"/";
 
 const CALCS = [
  {id:"average",group:"Stocks",ic:"x̄",name:"Stock Average Calculator",lede:"Add every lot you bought and see your new average buy price.",
@@ -308,7 +308,7 @@ $("#menu").onclick=()=>$("#app").classList.add("open");
 $("#scrim").onclick=()=>$("#app").classList.remove("open");
 
 // old #hash links: send them to the real page for that calculator
-const here=document.body.dataset.page||"average";
+const here=document.body.dataset.page||"home";
 const legacy=[...CALCS,...PAGES].find(x=>x.id===location.hash.slice(1));
 const dest=u=>location.protocol==="file:" && u.endsWith("/") ? u+"index.html" : u; // file:// has no folder index
 if(legacy && legacy.id!==here) location.replace(dest(new URL(pathOf(legacy),document.baseURI).href));
@@ -316,7 +316,7 @@ if(location.protocol==="file:") document.addEventListener("click",e=>{
   const a=e.target.closest&&e.target.closest("a[href]");
   if(a && a.href.startsWith("file:") && a.href.endsWith("/") && !e.defaultPrevented && e.button===0 && !e.metaKey && !e.ctrlKey){ e.preventDefault(); location.href=dest(a.href); }
 });
-render(here);
+if(here!=="home") render(here); // the homepage is a static intro page, not a calculator
 
 // contact form: send through Formspree when configured, otherwise open the visitor's email app
 document.addEventListener("submit",async e=>{

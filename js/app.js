@@ -154,6 +154,21 @@ const CALCS = [
     return {hero:["Return on equity (ROE)",pct(roe),sign(roe)],rows:[["Net profit margin",pct(nm)],["Asset turnover",num(at,2)+"×"],["Equity multiplier (assets ÷ equity)",num(em,2)+"×"],["DuPont check: margin × turnover × multiplier",pct(nm*at*em)],["Return on assets (ROA)",pct(roa)]],
       note:em>4?"An equity multiplier this high means the company relies heavily on borrowing, which lifts ROE but adds risk.":null}},
   formula:"ROE = net profit ÷ shareholders' equity. DuPont analysis splits it into three parts: ROE = net profit margin (profit ÷ revenue) × asset turnover (revenue ÷ assets) × equity multiplier (assets ÷ equity). It shows whether a high ROE comes from profitability, efficiency or borrowing. Use the same units, such as ₹ crore, for every figure."},
+ {id:"dcf",group:"Stocks",ic:"DC",name:"DCF Calculator",lede:"Estimate a company's intrinsic value per share from its future free cash flows.",
+  zeroOk:["nd"],
+  fields:[["fcf","Free cash flow this year",500,"₹ cr"],["g","Yearly growth for the next 10 years",15,"%"],["tg","Growth after that (terminal)",5,"%"],["dr","Discount rate",12,"%"],["sh","Shares outstanding",20,"crore"],["nd","Net debt (debt − cash, negative for net cash)",0,"₹ cr"],["price","Current share price",700,"₹"]],
+  calc:f=>{ if(f.dr<=f.tg) return {hero:["Intrinsic value per share","—"],rows:[],note:"The discount rate must be higher than the terminal growth rate."};
+    let pv=0, c=f.fcf; for(let t=1;t<=10;t++){ c*=1+f.g/100; pv+=c/Math.pow(1+f.dr/100,t); }
+    const tv=c*(1+f.tg/100)/((f.dr-f.tg)/100), ptv=tv/Math.pow(1+f.dr/100,10), ev=pv+ptv, eq=ev-f.nd, v=eq/f.sh, mos=(v-f.price)/v*100;
+    return {hero:["Intrinsic value per share",inr(v)],rows:[v>=f.price?["Margin of safety at today's price",pct(mos),"gain"]:["Price above intrinsic value by",v>0?pct((f.price/v-1)*100):"—","loss"],["Value of the next 10 years' cash flows",inr(pv,0)+" cr"],["Value beyond 10 years (terminal value)",inr(ptv,0)+" cr"],["Share of value from the terminal value",pct(ptv/ev*100)],["Enterprise value",inr(ev,0)+" cr"],["Equity value",inr(eq,0)+" cr"]],
+      note:ptv/ev>0.75?"Most of the value comes from the terminal value, so small changes in the long-term assumptions move the result a lot.":null}},
+  formula:"Each year's free cash flow is grown for 10 years and discounted to today: FCF<sub>t</sub> ÷ (1 + discount rate)<sup>t</sup>. Terminal value = FCF<sub>10</sub> × (1 + terminal growth) ÷ (discount rate − terminal growth), also discounted to today. Enterprise value = the sum of both. Equity value = enterprise value − net debt, and value per share = equity value ÷ shares. Enter amounts in ₹ crore and shares in crore. The result depends heavily on the assumptions, so try a range."},
+ {id:"market-cap",group:"Stocks",ic:"MC",name:"Market Cap & Enterprise Value Calculator",lede:"Work out a company's market capitalisation, enterprise value and EV/EBITDA.",
+  zeroOk:["debt","cash"],
+  fields:[["price","Share price",1500,"₹"],["sh","Shares outstanding",10,"crore"],["debt","Total debt",2000,"₹ cr"],["cash","Cash and equivalents",500,"₹ cr"],["ebitda","EBITDA (yearly)",1800,"₹ cr"],["np","Net profit (yearly)",900,"₹ cr"]],
+  calc:f=>{ const mc=f.price*f.sh, ev=mc+f.debt-f.cash;
+    return {hero:["Market capitalisation",inr(mc,0)+" cr"],rows:[["Enterprise value",inr(ev,0)+" cr"],["EV / EBITDA",num(ev/f.ebitda,2)+"×"],["P/E (market cap ÷ net profit)",num(mc/f.np,2)+"×"],["Net debt",inr(f.debt-f.cash,0)+" cr"],["Net debt / EBITDA",num((f.debt-f.cash)/f.ebitda,2)+"×"]]}},
+  formula:"Market capitalisation = share price × shares outstanding. Enterprise value (EV) = market cap + debt − cash, which is roughly what it would cost to buy the whole business, including its debt. EV/EBITDA compares that value with operating profit before interest, tax, depreciation and amortisation. P/E = market cap ÷ net profit. Enter amounts in ₹ crore and shares in crore."},
  {id:"sip",group:"Mutual funds",ic:"↻",name:"SIP Calculator",lede:"Estimate what a monthly investment grows to over time.",
   fields:[["p","Monthly investment",10000,"₹"],["r","Expected return (p.a.)",12,"%"],["y","Duration",15,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12, fv= i? f.p*((Math.pow(1+i,n)-1)/i)*(1+i) : f.p*n, inv=f.p*n;
@@ -264,6 +279,12 @@ const CALCS = [
     return {hero:["Future cost of the course",inr(fut,0)],rows:[["Your savings will grow to",inr(hv,0)],["Still needed",inr(gap,0),gap>0?"loss":"gain"],["Monthly SIP needed",inr(gap/k,0)],["Or a lump sum today of",inr(gap/Math.pow(1+f.r/100,f.y),0)]],
       note:gap===0?"Your existing savings are expected to cover the full cost.":null}},
   formula:"Future cost = today's cost × (1 + education inflation)<sup>years</sup>. Existing savings grow at the expected return. The monthly SIP needed = amount still needed ÷ [((1 + i)<sup>n</sup> − 1) ÷ i × (1 + i)], where i is the monthly rate and n is the number of months. The lump sum needed today = amount still needed ÷ (1 + return)<sup>years</sup>."},
+ {id:"exit-load",group:"Mutual funds",ic:"XL",name:"Mutual Fund Exit Load Calculator",lede:"See the exit load deducted when you redeem mutual fund units early, and what you receive.",
+  zeroOk:["load"],
+  fields:[["u","Units to redeem",1000,"units"],["bn","NAV when you bought",70,"₹"],["nav","NAV when you redeem",85,"₹"],["load","Exit load",1,"%"]],
+  calc:f=>{ const amt=f.u*f.nav, l=amt*f.load/100, rec=amt-l, g=rec-f.u*f.bn;
+    return {hero:["Amount you receive",inr(rec,0)],rows:[["Redemption value before exit load",inr(amt,0)],["Exit load deducted",inr(l,0),l>0?"loss":""],["Amount you invested in these units",inr(f.u*f.bn,0)],["Gain after exit load",inr(g,0),sign(g)],["Exit load as a share of your gain",f.u*(f.nav-f.bn)>0?pct(l/(f.u*(f.nav-f.bn))*100):"—"]]}},
+  formula:"Redemption value = units × NAV on the redemption date. Exit load = redemption value × exit load %, and you receive the rest. The exit load applies only to units redeemed within the period set in the scheme's documents, often one year for equity funds. Tax on the gain is not included."},
  {id:"emi",group:"Loans & growth",ic:"≡",name:"EMI Calculator",lede:"Find the monthly instalment and total interest on a loan.",
   fields:[["p","Loan amount",3000000,"₹"],["r","Interest rate (p.a.)",8.5,"%"],["y","Tenure",20,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12,e= i? f.p*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1) : f.p/n,tot=e*n;
@@ -390,6 +411,14 @@ const CALCS = [
     return {hero:["Home price you can afford",inr(p,0)],rows:[["Home loan",inr(loan,0)],["EMI on that loan",inr(e,0)],["Down payment",inr(p-loan,0)],["Buying costs",inr(p*c,0)],["What limits the price",pInc<=pSav?"Your income (EMI limit)":"Your savings (down payment)"],["Largest loan your income supports",inr(L,0)]],
       note:me<=0?"Your existing EMIs use up the share of income lenders usually allow, so the price depends on your savings alone.":null}},
   formula:"The largest loan your income supports comes from the EMI limit: (income × FOIR − existing EMIs), repaid over the tenure at the loan rate. Your savings must cover the down payment and the buying costs. The price you can afford is the lower of two limits: (largest loan + savings) ÷ (1 + buying costs), and savings ÷ (1 + buying costs − maximum loan share). RBI caps the loan-to-value ratio according to loan size, and lenders also check your credit score."},
+ {id:"car-affordability",group:"Loans & growth",ic:"CA",name:"Car Affordability Calculator",lede:"Find the price of car you can afford using the 20/4/10 rule.",
+  zeroOk:["run"],
+  fields:[["inc","Monthly income",150000,"₹"],["share","Share of income for all car costs",10,"%"],["run","Running costs per month (fuel, insurance, upkeep)",5000,"₹"],["down","Down payment",20,"%"],["rate","Car loan rate (p.a.)",9,"%"],["y","Loan tenure",4,"years"]],
+  calc:f=>{ const b=f.inc*f.share/100-f.run; if(b<=0) return {hero:["Car price you can afford","—"],rows:[],note:"Running costs already use up the share of income set aside for the car."};
+    if(f.down>=100) return {hero:["Car price you can afford","—"],rows:[],note:"The down payment must be below 100%."};
+    const i=f.rate/1200, n=Math.round(f.y*12), loan=b*(1-Math.pow(1+i,-n))/i, price=loan/(1-f.down/100);
+    return {hero:["Car price you can afford",inr(price,0)],rows:[["Car loan",inr(loan,0)],["Down payment",inr(price-loan,0)],["EMI",inr(b,0)],["Total car costs a month (EMI + running costs)",inr(b+f.run,0)],["Total interest on the loan",inr(b*n-loan,0),"loss"]]}},
+  formula:"The 20/4/10 rule: put down at least 20%, borrow for no more than 4 years, and keep all car costs within 10% of your income. EMI budget = income × share − running costs. Car loan = EMI × (1 − (1 + i)<sup>−n</sup>) ÷ i, and car price = loan ÷ (1 − down payment). The on-road price includes registration and insurance, so check that it fits too."},
  {id:"ssy",group:"Savings & salary",ic:"SS",name:"Sukanya Samriddhi Yojana Calculator",lede:"Estimate the tax-free maturity value of a Sukanya Samriddhi account for your daughter.",
   fields:[["d","Yearly deposit",150000,"₹"],["r","Interest rate (p.a.)",8.2,"%"],["age","Girl's age when the account is opened",5,"years"]],
   calc:f=>{ const dep=Math.min(f.d,150000); let b=0; for(let y=1;y<=21;y++){ if(y<=15) b+=dep; b*=1+f.r/100; } const inv=dep*15;
@@ -457,6 +486,17 @@ const CALCS = [
   calc:f=>{ const inv=f.ip*f.g, int=inv*f.ir/100*f.y, val=f.cp*f.g, cg=val-inv, tot=cg+int, ann=(Math.pow((val+int)/inv,1/f.y)-1)*100;
     return {hero:["Total return",inr(tot,0),sign(tot)],rows:[["Amount invested",inr(inv,0)],["Interest earned",inr(int,0),"gain"],["Value at redemption",inr(val,0)],["Gain from the gold price",inr(cg,0),sign(cg)],["Total return (%)",pct(tot/inv*100),sign(tot)],["Annualised return",pct(ann),sign(ann)]]}},
   formula:"Interest = issue price × grams × interest rate × years, paid every six months on the issue price, not on the current gold price. Value at redemption = gold price × grams. Total return = gold gain + interest. The annualised return treats the interest as cash received rather than reinvested. Interest is taxable at your slab rate, and the tax on the redemption gain depends on how and when you exit."},
+ {id:"annuity",group:"Savings & salary",ic:"AN",name:"Annuity Calculator",lede:"See the monthly pension a corpus can buy, or the corpus you need for the pension you want.",
+  zeroOk:["want"],
+  fields:[["c","Corpus used to buy the annuity",5000000,"₹"],["r","Annuity rate (p.a.)",7,"%"],["want","Monthly pension you want",50000,"₹"]],
+  calc:f=>{ const m=f.c*f.r/1200, need=f.want*1200/f.r;
+    return {hero:["Monthly pension",inr(m,0),"gain"],rows:[["Yearly pension",inr(m*12,0)],...(f.want>0?[["Corpus needed for the pension you want",inr(need,0)],[need>f.c?"Shortfall":"Surplus",inr(Math.abs(need-f.c),0),need>f.c?"loss":"gain"]]:[])]}},
+  formula:"Monthly pension = corpus × annuity rate ÷ 12. Corpus needed = desired monthly pension × 12 ÷ annuity rate. Annuity rates depend on your age and the option you choose. A pension for life with the purchase price returned to your nominee pays less than a pension for life only. Annuity income is taxed at your slab rate, and most annuities are not linked to inflation."},
+ {id:"leave-encashment",group:"Savings & salary",ic:"LV",name:"Leave Encashment Calculator",lede:"Work out the money you get for unused leave and how much of it is tax-free.",
+  fields:[["sal","Monthly basic pay + DA",60000,"₹"],["days","Unused leave days",120,"days"],["div","Days counted in a month",30,"days"],["cap","Tax-free limit on retirement",2500000,"₹"]],
+  calc:f=>{ const day=f.sal/f.div, enc=day*f.days, free=Math.min(enc,f.cap,f.sal*10);
+    return {hero:["Leave encashment",inr(enc,0)],rows:[["Salary per day",inr(day,0)],["Tax-free on retirement or resignation (non-government)",inr(free,0),"gain"],["Taxable part",inr(enc-free,0),enc>free?"loss":""],["Taxable if encashed while still in service",inr(enc,0),"loss"]]}},
+  formula:"Leave encashment = (basic pay + DA) ÷ days in a month × unused leave days. Many employers count 30 days in a month, and some use 26. For non-government employees leaving a job, the tax-free part is the lowest of the encashment, the limit set by law and 10 months' average salary. The law also limits the leave counted for tax to 30 days per completed year of service. Encashment while still in service is fully taxable. The default limit is the one at the time of writing."},
  {id:"percentage",group:"Everyday",ic:"%",name:"Percentage Calculator",lede:"Three common percentage questions, answered at once.",
   fields:[["a","Value A",25,""],["b","Value B",480,""]],
   calc:f=>{const ch=(f.b-f.a)/f.a*100;
@@ -511,7 +551,20 @@ const CALCS = [
   calc:f=>{ const cm=f.sp-f.vc; if(cm<=0) return {hero:["Break-even units","—"],rows:[],note:"The selling price must be higher than the variable cost per unit, or each sale adds to the loss."};
     const be=f.fc/cm, tu=(f.fc+f.tp)/cm;
     return {hero:["Break-even units per month",num(Math.ceil(be),0)],rows:[["Break-even revenue",inr(be*f.sp,0)],["Contribution per unit",inr(cm)],["Contribution margin",pct(cm/f.sp*100)],["Units for the target profit",num(Math.ceil(tu),0)],["Revenue for the target profit",inr(tu*f.sp,0)]]}},
-  formula:"Contribution per unit = selling price − variable cost per unit. It is what each sale adds towards fixed costs and profit. Break-even units = fixed costs ÷ contribution per unit, rounded up. Units for a target profit = (fixed costs + target profit) ÷ contribution per unit. Prices and costs here are before GST."}
+  formula:"Contribution per unit = selling price − variable cost per unit. It is what each sale adds towards fixed costs and profit. Break-even units = fixed costs ÷ contribution per unit, rounded up. Units for a target profit = (fixed costs + target profit) ÷ contribution per unit. Prices and costs here are before GST."},
+ {id:"gold-price",group:"Everyday",ic:"AU",name:"Gold Jewellery Price Calculator",lede:"Work out the final price of gold jewellery with making charges and GST.",
+  zeroOk:["mk"],
+  fields:[["rate","Gold rate per gram (for the purity you are buying)",7000,"₹"],["wt","Weight",10,"grams"],["mk","Making charges",12,"% of gold value"],["gst","GST",3,"%"]],
+  calc:f=>{ const gv=f.rate*f.wt, mk=gv*f.mk/100, sub=gv+mk, g=sub*f.gst/100, tot=sub+g;
+    return {hero:["Final price",inr(tot,0)],rows:[["Gold value",inr(gv,0)],["Making charges",inr(mk,0)],["GST",inr(g,0)],["Effective price per gram",inr(tot/f.wt,0)],["Paid above the gold value",inr(tot-gv,0),"loss"]]}},
+  formula:"Gold value = gold rate × weight. Making charges are a percentage of the gold value here, though some jewellers charge a fixed amount per gram. GST is charged on the gold value plus making charges. Use the rate for the purity you are buying: 22K gold is about 91.6% pure, so its rate is roughly 91.6% of the 24K rate. Check the current GST rate and any hallmarking charge on your bill."},
+ {id:"credit-utilisation",group:"Everyday",ic:"CU",name:"Credit Utilisation Calculator",lede:"Check how much of your credit card limit you are using and how to bring it down.",
+  zeroOk:["used"],
+  fields:[["lim","Total credit limit across your cards",300000,"₹"],["used","Total balance used",90000,"₹"],["t","Target utilisation",30,"%"]],
+  calc:f=>{ const u=f.used/f.lim*100, mx=f.lim*f.t/100, pay=Math.max(0,f.used-mx);
+    return {hero:["Credit utilisation",pct(u),u>f.t?"loss":"gain"],rows:[["Highest balance within your target",inr(mx,0)],["Pay down to reach the target",inr(pay,0),pay>0?"loss":"gain"],["Available credit",inr(Math.max(0,f.lim-f.used),0)],["Limit needed for this balance at your target",inr(f.used/(f.t/100),0)]],
+      note:u>f.t?"Paying the balance before the statement date lowers the balance reported to credit bureaus.":null}},
+  formula:"Credit utilisation = balance used ÷ total credit limit. Credit bureaus look at how much of your limit you use, and lower is generally better. Many lenders treat staying below about 30% as healthy. Pay down = balance − (limit × target). Paying in full every month matters more than the exact ratio."}
 ];
 
 

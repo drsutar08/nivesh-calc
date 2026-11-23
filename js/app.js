@@ -4,7 +4,7 @@ const pct = (v,d=2)=> isFinite(v) ? v.toFixed(d) + "%" : "—";
 const sign = v => v>0 ? "gain" : v<0 ? "loss" : "";
 
 const slugOf = n => n.toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
-const pathOf = c => c.id==="home" ? "./" : (c.id==="about"?"about-us":c.id==="contact"?"contact-us":slugOf(c.name))+"/";
+const pathOf = c => c.id==="home" ? "./" : (c.slug||(c.id==="about"?"about-us":c.id==="contact"?"contact-us":slugOf(c.name)))+"/";
 
 const CALCS = [
  {id:"average",group:"Stocks",ic:"x̄",name:"Stock Average Calculator",lede:"Add every lot you bought and see your new average buy price.",
@@ -129,6 +129,19 @@ const CALCS = [
   calc:f=>{ const q=f.lot*f.lots, pl=(f.exit-f.entry)*q, val=f.entry*q, mg=val*f.m/100;
     return {hero:["Long (buy) profit / loss",inr(pl,0),sign(pl)],rows:[["Short (sell) profit / loss",inr(-pl,0),sign(-pl)],["Points moved",num(f.exit-f.entry,2),sign(pl)],["Profit / loss per point",inr(q,0)],["Contract value",inr(val,0)],["Approximate margin",inr(mg,0)],["Return on margin (long)",pct(pl/mg*100),sign(pl)],["Quantity",num(q,0)+" units"]]}},
   formula:"Long profit = (exit price − entry price) × lot size × lots, and a short position gains the opposite. Contract value = entry price × quantity. Return on margin = profit ÷ (contract value × margin %). Exchanges set the margin and the lot size and change them over time. Brokerage, STT and other charges are not included."},
+ {id:"pe-ratio",slug:"pe-ratio-calculator",group:"Stocks",ic:"PE",name:"P/E Ratio Calculator",lede:"Work out a stock's P/E, forward P/E and PEG ratio, and compare it with its sector.",
+  fields:[["price","Share price",1200,"₹"],["eps","Earnings per share (last 12 months)",60,"₹"],["g","Expected earnings growth (p.a.)",15,"%"],["sec","Sector or index P/E",22,"×"]],
+  calc:f=>{ const pe=f.price/f.eps, fpe=f.price/(f.eps*(1+f.g/100)), peg=pe/f.g, prem=(pe/f.sec-1)*100;
+    return {hero:["P/E ratio",num(pe,2)+"×"],rows:[["Forward P/E (on next year's earnings)",num(fpe,2)+"×"],["PEG ratio",num(peg,2),peg<=1?"gain":peg>2?"loss":""],["Earnings yield",pct(100/pe)],[prem>=0?"Premium to the sector P/E":"Discount to the sector P/E",pct(Math.abs(prem)),prem>0?"loss":"gain"],["Price at the sector P/E",inr(f.eps*f.sec)]]}},
+  formula:"P/E = share price ÷ earnings per share. Forward P/E = price ÷ (EPS × (1 + growth)). PEG = P/E ÷ expected growth rate (in %), so a PEG near 1 means the P/E roughly matches growth. Earnings yield = EPS ÷ price, the inverse of P/E. Compare P/E ratios only between similar companies, because normal levels differ a lot between sectors."},
+ {id:"dividend-reinvestment",group:"Stocks",ic:"DR",name:"Dividend Reinvestment Calculator",lede:"See how reinvesting dividends grows your holding compared with taking them as cash.",
+  zeroOk:["tax"],
+  fields:[["a","Amount invested",100000,"₹"],["dy","Dividend yield",3,"%"],["g","Yearly share price growth",8,"%"],["y","Years",15,"years"],["tax","Tax on dividends (your slab)",20,"%"]],
+  calc:f=>{ const n=Math.round(f.y); let re=f.a, plain=f.a, cash=0;
+    for(let k=0;k<n;k++){ re*=1+f.g/100; re+=re*f.dy/100*(1-f.tax/100); plain*=1+f.g/100; cash+=plain*f.dy/100*(1-f.tax/100); }
+    const ann=(Math.pow(re/f.a,1/n)-1)*100;
+    return {hero:["Value with dividends reinvested",inr(re,0)],rows:[["Value without reinvesting",inr(plain,0)],["Dividends taken as cash (after tax)",inr(cash,0)],["Total without reinvesting",inr(plain+cash,0)],["Extra from reinvesting",inr(re-plain-cash,0),re>plain+cash?"gain":""],["Annualised return with reinvesting",pct(ann),sign(ann)]]}},
+  formula:"Each year the share price grows by the rate you enter, and the dividend (yield × value) is paid after tax. With reinvestment, the dividend buys more shares, so next year's growth and dividend are on a larger holding. Without reinvestment, the dividends are kept as cash. This assumes the yield and growth stay constant, and it leaves out brokerage."},
  {id:"sip",group:"Mutual funds",ic:"↻",name:"SIP Calculator",lede:"Estimate what a monthly investment grows to over time.",
   fields:[["p","Monthly investment",10000,"₹"],["r","Expected return (p.a.)",12,"%"],["y","Duration",15,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12, fv= i? f.p*((Math.pow(1+i,n)-1)/i)*(1+i) : f.p*n, inv=f.p*n;
@@ -216,6 +229,14 @@ const CALCS = [
     return {hero:["Value with STP",inr(stp,0)],rows:[["Monthly transfer",inr(t,0)],["Lump sum straight into equity",inr(lump,0)],["Left in the liquid fund",inr(liquid,0)],["STP vs lump sum in equity",inr(stp-lump,0),sign(stp-lump)],["Gain with STP",inr(stp-f.a,0),sign(stp-f.a)]],
       note:"At steady returns, putting everything into equity at once ends higher, as with SIP vs lumpsum. An STP gives up a little of that to avoid investing the whole amount just before a fall."}},
   formula:"The full amount starts in a liquid fund. Each month a fixed amount (total ÷ transfer months) moves to an equity fund, and any interest left in the liquid fund moves across at the end of the transfer period. Both funds grow monthly at their expected return. The result is compared with investing the full amount in equity on day one, and with leaving it all in the liquid fund."},
+ {id:"asset-allocation",group:"Mutual funds",ic:"AA",name:"Asset Allocation Calculator",lede:"Find a suggested equity and debt mix for your age, and how much to move to rebalance.",
+  zeroOk:["eq","debt"],
+  fields:[["age","Your age",35,"years"],["base","Rule: equity % = this number − age",110,""],["eq","Current equity investments",600000,"₹"],["debt","Current debt investments (FD, PPF, debt funds)",400000,"₹"]],
+  calc:f=>{ const t=Math.min(100,Math.max(0,f.base-f.age)), tot=f.eq+f.debt;
+    if(tot<=0) return {hero:["Suggested equity share",pct(t,0)],rows:[["Suggested debt share",pct(100-t,0)]],note:"Enter your current investments to see how to rebalance."};
+    const te=tot*t/100, mv=te-f.eq;
+    return {hero:["Suggested equity share",pct(t,0)],rows:[["Suggested debt share",pct(100-t,0)],["Your equity share now",pct(f.eq/tot*100)],["Target equity amount",inr(te,0)],["Target debt amount",inr(tot-te,0)],["To rebalance",Math.abs(mv)<1?"No change needed":mv>0?`Move ${inr(mv,0)} from debt to equity`:`Move ${inr(-mv,0)} from equity to debt`]]}},
+  formula:"Suggested equity % = rule number − your age, kept between 0% and 100%, and the rest goes to debt. A rule number of 100 is conservative, 110 is moderate and 120 is aggressive. Target amounts apply those shares to your current total, and the difference from what you hold now is the amount to move. This is a starting point only. Your goals, income stability and comfort with risk matter more than age alone."},
  {id:"emi",group:"Loans & growth",ic:"≡",name:"EMI Calculator",lede:"Find the monthly instalment and total interest on a loan.",
   fields:[["p","Loan amount",3000000,"₹"],["r","Interest rate (p.a.)",8.5,"%"],["y","Tenure",20,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12,e= i? f.p*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1) : f.p/n,tot=e*n;
@@ -311,6 +332,29 @@ const CALCS = [
     const i=(lo+hi)/2, r=i*1200, tot=f.emi*n;
     return {hero:["Interest rate (p.a.)",pct(r)],rows:[["Total interest",inr(tot-f.p,0),"loss"],["Total payable",inr(tot,0)],["Effective annual rate",pct((Math.pow(1+i,12)-1)*100)],["Number of EMIs",num(n,0)]]}},
   formula:"The rate is the monthly rate i that solves loan = EMI × (1 − (1 + i)<sup>−n</sup>) ÷ i, where n is the number of monthly EMIs. The yearly rate is i × 12, which is how lenders quote reducing-balance rates. The effective annual rate, (1 + i)<sup>12</sup> − 1, shows the cost with monthly compounding. Processing fees are not included, and they raise the real cost further."},
+ {id:"loan-tenure",group:"Loans & growth",ic:"LT",name:"Loan Tenure Calculator",lede:"Find how long it takes to repay a loan at the EMI you can afford.",
+  fields:[["p","Loan amount",3000000,"₹"],["r","Interest rate (p.a.)",8.5,"%"],["emi","EMI you can pay",30000,"₹"]],
+  calc:f=>{ const i=f.r/1200; if(f.emi<=f.p*i) return {hero:["Loan tenure","—"],rows:[["Interest in the first month",inr(f.p*i,0)]],note:"This EMI does not even cover the first month's interest, so the loan would never be repaid. Raise the EMI."};
+    const nx=-Math.log(1-f.p*i/f.emi)/Math.log(1+i), n=Math.ceil(nx-1e-9), y=Math.floor(n/12), m=n%12, tot=f.emi*nx;
+    return {hero:["Loan tenure",`${y} ${y===1?"yr":"yrs"} ${m} ${m===1?"month":"months"}`],rows:[["Number of EMIs",num(n,0)],["Total interest",inr(tot-f.p,0),"loss"],["Total payable",inr(tot,0)],["Interest in the first month",inr(f.p*i,0)]]}},
+  formula:"Number of EMIs n = −ln(1 − P × i ÷ EMI) ÷ ln(1 + i), where P is the loan and i is the monthly rate, rounded up to whole months. The last EMI is usually smaller. The EMI must be more than the first month's interest (P × i), or the loan never gets repaid."},
+ {id:"bond-yield",group:"Loans & growth",ic:"BY",name:"Bond Yield (YTM) Calculator",lede:"Find the yield to maturity and current yield of a bond from its price and coupon.",
+  fields:[["fv","Face value",1000,"₹"],["c","Coupon rate (p.a.)",7.5,"%"],["price","Price you pay",980,"₹"],["y","Years to maturity",5,"years"],["m","Coupon payments a year",2,"times"]],
+  calc:f=>{ const m=Math.max(1,Math.round(f.m)), n=Math.round(f.y*m), cp=f.fv*f.c/100/m, pv=r=>{let s=0;for(let k=1;k<=n;k++) s+=cp/Math.pow(1+r,k); return s+f.fv/Math.pow(1+r,n)};
+    let lo=-0.99, hi=1; for(let k=0;k<200;k++){const mid=(lo+hi)/2; if(pv(mid)>f.price) lo=mid; else hi=mid;}
+    const r=(lo+hi)/2, ytm=r*m*100;
+    return {hero:["Yield to maturity (YTM)",pct(ytm)],rows:[["Current yield",pct(cp*m/f.price*100)],["Effective annual yield",pct((Math.pow(1+r,m)-1)*100)],["Coupon per payment",inr(cp)],["Total coupons till maturity",inr(cp*n,0)],[f.fv>=f.price?"Gain at maturity":"Loss at maturity",inr(Math.abs(f.fv-f.price)),f.fv>=f.price?"gain":"loss"]]}},
+  formula:"YTM is the yearly rate r at which price = the sum of every coupon ÷ (1 + r ÷ m)<sup>k</sup> + face value ÷ (1 + r ÷ m)<sup>n</sup>, where m is the number of coupons a year and n is the number of coupons left. Current yield = yearly coupon ÷ price. YTM assumes you hold to maturity, every payment is made, and coupons are reinvested at the same yield. Tax and accrued interest are not included."},
+ {id:"rent-vs-buy",group:"Loans & growth",ic:"RB",name:"Rent vs Buy Calculator",lede:"Compare your net worth after buying a home with a loan against renting and investing the difference.",
+  fields:[["price","Home price",8000000,"₹"],["down","Down payment",20,"%"],["cost","Buying costs (stamp duty, registration)",7,"%"],["rate","Home loan rate (p.a.)",8.5,"%"],["y","Years to compare (loan tenure)",20,"years"],["rent","Rent for a similar home",25000,"₹ a month"],["rr","Yearly rent increase",5,"%"],["app","Yearly rise in home value",5,"%"],["inv","Return on investments (p.a.)",10,"%"]],
+  calc:f=>{ if(f.down>100) return {hero:["Better choice","—"],rows:[],note:"The down payment cannot be more than 100%."};
+    const n=Math.round(f.y*12), i=f.rate/1200, loan=f.price*(1-f.down/100), emi=loan>0?(i?loan*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1):loan/n):0, mi=f.inv/1200;
+    let renter=f.price*(f.down+f.cost)/100, buyer=0, rent=f.rent, lastRent=rent;
+    for(let k=0;k<n;k++){ if(k>0&&k%12===0) rent*=1+f.rr/100; lastRent=rent; const d=emi-rent; renter*=1+mi; buyer*=1+mi; if(d>0) renter+=d; else buyer+=-d; }
+    const home=f.price*Math.pow(1+f.app/100,f.y), bw=home+buyer, gap=bw-renter;
+    return {hero:[gap>=0?"Buying ends ahead by":"Renting ends ahead by",inr(Math.abs(gap),0)],rows:[["Buyer's net worth",inr(bw,0)],["Renter's net worth",inr(renter,0)],["Home value at the end",inr(home,0)],["Monthly EMI",inr(emi,0)],["Rent in the first year",inr(f.rent,0)+" a month"],["Rent in the final year",inr(lastRent,0)+" a month"],["Cash needed upfront to buy",inr(f.price*(f.down+f.cost)/100,0)]],
+      note:"Assumes the renter invests the upfront cash and any month the EMI is above the rent, and the buyer invests the difference when rent is higher. Maintenance, property tax, tax benefits and selling costs are not included."}},
+  formula:"Buyer: pays the EMI on (price − down payment) for the full tenure, then owns a home worth price × (1 + home value rise)<sup>years</sup>. Renter: invests the down payment plus buying costs on day one, pays rent that rises every year, and invests the gap whenever the EMI is higher than the rent. If rent becomes higher than the EMI, the buyer invests the gap instead. Both investments grow monthly at the return you enter, and net worth is compared at the end."},
  {id:"ssy",group:"Savings & salary",ic:"SS",name:"Sukanya Samriddhi Yojana Calculator",lede:"Estimate the tax-free maturity value of a Sukanya Samriddhi account for your daughter.",
   fields:[["d","Yearly deposit",150000,"₹"],["r","Interest rate (p.a.)",8.2,"%"],["age","Girl's age when the account is opened",5,"years"]],
   calc:f=>{ const dep=Math.min(f.d,150000); let b=0; for(let y=1;y<=21;y++){ if(y<=15) b+=dep; b*=1+f.r/100; } const inv=dep*15;
@@ -367,6 +411,12 @@ const CALCS = [
     return {hero:["Monthly income",inr(mi,0),"gain"],rows:[["Yearly income",inr(mi*12,0),"gain"],["Total interest over the tenure",inr(tot,0),"gain"],["Principal returned at maturity",inr(f.p,0)],["Total received",inr(f.p+tot,0)]],bar:[f.p,tot],barLabels:["Deposit","Interest"],
       note:f.p>1500000?"The scheme caps deposits, at ₹9 lakh for a single account and ₹15 lakh for a joint account at the time of writing. Check the current limits.":f.p>900000?"Above the single-account limit (₹9 lakh at the time of writing), you would need a joint account.":null}},
   formula:"Monthly income = deposit × rate ÷ 12. The interest is paid out every month and does not compound, and the deposit is returned at the end of the 5-year tenure. The government reviews the rate every quarter, and the default is the rate at the time of writing. The rate stays fixed for the deposit's term."},
+ {id:"salary-hike",group:"Savings & salary",ic:"SH",name:"Salary Hike Calculator",lede:"See your new salary after a hike, and how much of the hike is real after inflation.",
+  fields:[["s","Current salary (yearly)",1200000,"₹"],["h","Hike",10,"%"],["inf","Inflation (p.a.)",6,"%"]],
+  calc:f=>{ const ns=f.s*(1+f.h/100), real=((1+f.h/100)/(1+f.inf/100)-1)*100;
+    return {hero:["New yearly salary",inr(ns,0),"gain"],rows:[["Increase per year",inr(ns-f.s,0),"gain"],["New monthly salary",inr(ns/12,0)],["Increase per month",inr((ns-f.s)/12,0),"gain"],["Real hike after inflation",pct(real),sign(real)],["Salary in 5 years at the same hike every year",inr(f.s*Math.pow(1+f.h/100,5),0)]],
+      note:real<0?"Your hike is below inflation, so your salary buys less than it did last year.":null}},
+  formula:"New salary = current salary × (1 + hike ÷ 100). Real hike = (1 + hike) ÷ (1 + inflation) − 1, which shows how much more your salary can actually buy. Take-home pay rises by less than the gross hike because of tax and deductions."},
  {id:"percentage",group:"Everyday",ic:"%",name:"Percentage Calculator",lede:"Three common percentage questions, answered at once.",
   fields:[["a","Value A",25,""],["b","Value B",480,""]],
   calc:f=>{const ch=(f.b-f.a)/f.a*100;
@@ -402,7 +452,13 @@ const CALCS = [
   calc:f=>{ const out=f.exp+f.emi, target=out*f.months, gap=Math.max(0,target-f.saved), mo=gap&&f.save>0?Math.ceil(gap/f.save):0;
     return {hero:["Emergency fund target",inr(target,0)],rows:[["Monthly outgoings covered",inr(out,0)],["Already set aside",inr(f.saved,0)],["Still needed",inr(gap,0),gap>0?"loss":"gain"],["Time to build it",gap===0?"Already complete":f.save>0?`${mo} ${mo===1?"month":"months"}`:"—"],["Months covered today",num(f.saved/out,1)]],
       note:gap>0&&f.save<=0?"Add a monthly amount to see how long it will take to reach the target.":null}},
-  formula:"Emergency fund target = (essential monthly expenses + EMIs and premiums) × months of cover. Still needed = target − amount already set aside. Time to build it = still needed ÷ monthly saving, rounded up. Many planners suggest 3 to 6 months, or more if your income is irregular or one person earns for the whole family."}
+  formula:"Emergency fund target = (essential monthly expenses + EMIs and premiums) × months of cover. Still needed = target − amount already set aside. Time to build it = still needed ÷ monthly saving, rounded up. Many planners suggest 3 to 6 months, or more if your income is irregular or one person earns for the whole family."},
+ {id:"profit-margin",group:"Everyday",ic:"PM",name:"Profit Margin Calculator",lede:"Work out profit, margin and markup, and the selling price for the margin you want.",
+  fields:[["cost","Cost price",800,"₹"],["sp","Selling price",1000,"₹"],["tm","Target margin",30,"%"]],
+  calc:f=>{ const p=f.sp-f.cost;
+    return {hero:["Profit margin",pct(p/f.sp*100),sign(p)],rows:[["Profit per unit",inr(p),sign(p)],["Markup on cost",pct(p/f.cost*100),sign(p)],[`Selling price for a ${num(f.tm)}% margin`,f.tm<100?inr(f.cost/(1-f.tm/100)):"—"],[`Markup needed for a ${num(f.tm)}% margin`,f.tm<100?pct(f.tm/(100-f.tm)*100):"—"]],
+      note:f.tm>=100?"A margin must be below 100% of the selling price.":null}},
+  formula:"Profit = selling price − cost. Margin = profit ÷ selling price, and markup = profit ÷ cost. They are not the same: a 25% markup gives a 20% margin. Selling price for a target margin = cost ÷ (1 − margin). Prices here are before GST."}
 ];
 
 

@@ -87,6 +87,25 @@ const CALCS = [
   calc:f=>{ const q=f.lot*f.lots, bc=(Math.max(0,f.s-f.k)-f.prem)*q, bp=(Math.max(0,f.k-f.s)-f.prem)*q;
     return {hero:["Buy call: profit / loss",inr(bc,0),sign(bc)],rows:[["Buy put: profit / loss",inr(bp,0),sign(bp)],["Sell call: profit / loss",inr(-bc,0),sign(-bc)],["Sell put: profit / loss",inr(-bp,0),sign(-bp)],["Call break-even price",inr(f.k+f.prem)],["Put break-even price",inr(f.k-f.prem)],["Premium for all lots",inr(f.prem*q,0)],["Quantity",num(q,0)+" units"]]}},
   formula:"At expiry a call is worth max(0, expiry price − strike) and a put is worth max(0, strike − expiry price). Buyer's profit = (value at expiry − premium) × quantity, and the seller's profit is the opposite. Break-even is strike + premium for a call and strike − premium for a put. Brokerage, STT and other charges are not included, and lot sizes change, so check the exchange's current lot size."},
+ {id:"pivot-points",group:"Stocks",ic:"PV",name:"Pivot Point Calculator",lede:"Get today's pivot, support and resistance levels from yesterday's high, low and close.",
+  fields:[["h","Previous high",1520,"₹"],["l","Previous low",1480,"₹"],["c","Previous close",1505,"₹"]],
+  calc:f=>{ if(f.h<f.l) return {hero:["Pivot point","—"],rows:[],note:"The high must be at least the low."};
+    const p=(f.h+f.l+f.c)/3, r=f.h-f.l;
+    return {hero:["Pivot point",inr(p)],rows:[["Resistance 3 (R3)",inr(f.h+2*(p-f.l))],["Resistance 2 (R2)",inr(p+r)],["Resistance 1 (R1)",inr(2*p-f.l)],["Support 1 (S1)",inr(2*p-f.h)],["Support 2 (S2)",inr(p-r)],["Support 3 (S3)",inr(f.l-2*(f.h-p))],["Fibonacci R1 / S1",`${inr(p+0.382*r)} / ${inr(p-0.382*r)}`],["Fibonacci R2 / S2",`${inr(p+0.618*r)} / ${inr(p-0.618*r)}`],["Fibonacci R3 / S3",`${inr(p+r)} / ${inr(p-r)}`]],
+      note:f.c>f.h||f.c<f.l?"The close is usually between the high and the low. Check the values you entered.":null}},
+  formula:"Pivot (P) = (high + low + close) ÷ 3, using the previous session. Classic levels: R1 = 2P − low, S1 = 2P − high, R2 = P + (high − low), S2 = P − (high − low), R3 = high + 2(P − low), S3 = low − 2(high − P). Fibonacci levels add or subtract 38.2%, 61.8% and 100% of the previous range (high − low) from P."},
+ {id:"ipo-listing",group:"Stocks",ic:"IP",name:"IPO Listing Gain Calculator",lede:"See your profit and tax if you sell IPO shares on listing day.",
+  zeroOk:["tax"],
+  fields:[["price","Issue price (upper end of the band)",500,"₹"],["lot","Shares per lot",30,"units"],["lots","Lots applied for",1,"lots"],["lp","Expected listing price",600,"₹"],["tax","Short-term capital gains tax rate",20,"%"]],
+  calc:f=>{ const q=f.lot*f.lots, inv=f.price*q, g=(f.lp-f.price)*q, t=Math.max(0,g)*f.tax/100;
+    return {hero:["Listing gain",inr(g,0),sign(g)],rows:[["Amount to apply (blocked in your account)",inr(inv,0)],["Shares if fully allotted",num(q,0)],["Listing gain (%)",pct(g/inv*100),sign(g)],["Tax if you sell within 12 months",inr(t,0),t>0?"loss":""],["Gain after tax",inr(g-t,0),sign(g-t)]]}},
+  formula:"Listing gain = (listing price − issue price) × shares allotted. Selling within 12 months makes it a short-term capital gain, taxed at the rate you enter. The default is the rate for listed equity at the time of writing. Brokerage and charges on the sale are not included, and in an oversubscribed IPO you may get fewer shares than you applied for, or none."},
+ {id:"mtf",group:"Stocks",ic:"MT",name:"Margin Trading (MTF) Interest Calculator",lede:"Work out the interest cost and real return of buying shares with margin trading funding.",
+  fields:[["buy","Buy price",500,"₹"],["q","Quantity",200,"units"],["m","Margin you pay",25,"%"],["r","MTF interest rate (p.a.)",15,"%"],["d","Days held",30,"days"],["sell","Sell price",550,"₹"]],
+  calc:f=>{ if(f.m>100) return {hero:["Net profit / loss","—"],rows:[],note:"The margin you pay cannot be more than 100%."};
+    const v=f.buy*f.q, own=v*f.m/100, fund=v-own, int=fund*f.r/100*f.d/365, gross=(f.sell-f.buy)*f.q, net=gross-int, roe=net/own*100, plain=(f.sell-f.buy)/f.buy*100;
+    return {hero:["Net profit / loss after interest",inr(net,0),sign(net)],rows:[["Position value",inr(v,0)],["Your money (margin)",inr(own,0)],["Funded by the broker",inr(fund,0)],["Interest cost",inr(int,0),int>0?"loss":""],["Gross profit / loss",inr(gross,0),sign(gross)],["Return on your money with MTF",pct(roe),sign(roe)],["Return without MTF",pct(plain),sign(plain)],["Break-even sell price",inr(f.buy+int/f.q)]]}},
+  formula:"Interest = amount funded × yearly rate × days held ÷ 365, where amount funded = position value × (100% − your margin). Net profit = (sell price − buy price) × quantity − interest. Return on your money = net profit ÷ your margin. Leverage multiplies both gains and losses. Brokerage, charges and any pledge fees are not included."},
  {id:"sip",group:"Mutual funds",ic:"↻",name:"SIP Calculator",lede:"Estimate what a monthly investment grows to over time.",
   fields:[["p","Monthly investment",10000,"₹"],["r","Expected return (p.a.)",12,"%"],["y","Duration",15,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12, fv= i? f.p*((Math.pow(1+i,n)-1)/i)*(1+i) : f.p*n, inv=f.p*n;
@@ -142,6 +161,13 @@ const CALCS = [
     return {hero:["Extra corpus with the direct plan",inr(diff,0),diff>0?"gain":sign(diff)],rows:[["Direct plan value",inr(d,0)],["Regular plan value",inr(g,0)],["Total invested",inr(inv,0)],["Share of the direct plan's corpus lost in the regular plan",pct(diff/d*100)],["Difference in expense ratio",pct(f.erg-f.ed)]],
       note:f.erg<f.ed?"The regular plan ratio is usually higher than the direct plan ratio, because it includes the distributor's commission.":null}},
   formula:"Each plan is projected with its net return: expected return − expense ratio. SIP value = P × [((1 + i)<sup>n</sup> − 1) ÷ i] × (1 + i), where i is the net monthly rate and n is the number of months. A one-time investment grows at the net yearly rate. The difference is what the higher expense ratio costs over the period."},
+ {id:"sip-delay",group:"Mutual funds",ic:"DL",name:"SIP Delay Cost Calculator",lede:"See how much waiting to start a SIP costs you by the time you need the money.",
+  zeroOk:["d"],
+  fields:[["sip","Monthly SIP",10000,"₹"],["r","Expected return (p.a.)",12,"%"],["y","Years until you need the money",25,"years"],["d","Years you delay starting",5,"years"]],
+  calc:f=>{ if(f.d>=f.y) return {hero:["Cost of waiting","—"],rows:[],note:"The delay must be shorter than the time until you need the money."};
+    const i=f.r/1200, k=n=>((Math.pow(1+i,n)-1)/i)*(1+i), n=Math.round(f.y*12), m=Math.round((f.y-f.d)*12), now=f.sip*k(n), later=f.sip*k(m), cost=now-later;
+    return {hero:["Cost of waiting",inr(cost,0),cost>0?"loss":""],rows:[["Corpus if you start now",inr(now,0)],["Corpus if you start later",inr(later,0)],["Share of the corpus lost",pct(cost/now*100),cost>0?"loss":""],["Monthly SIP needed later to catch up",inr(now/k(m),0)],["Extra you would invest by starting now",inr(f.sip*(n-m),0)]]}},
+  formula:"SIP value = P × [((1 + i)<sup>n</sup> − 1) ÷ i] × (1 + i), where i is the monthly rate and n is the number of months invested. Starting later leaves fewer months, so the corpus is smaller. Cost of waiting = corpus if you start now − corpus if you start later. The catch-up SIP is the monthly amount that reaches the same corpus in the shorter time."},
  {id:"emi",group:"Loans & growth",ic:"≡",name:"EMI Calculator",lede:"Find the monthly instalment and total interest on a loan.",
   fields:[["p","Loan amount",3000000,"₹"],["r","Interest rate (p.a.)",8.5,"%"],["y","Tenure",20,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12,e= i? f.p*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1) : f.p/n,tot=e*n;
@@ -200,6 +226,14 @@ const CALCS = [
     const rr=(lo+hi)/2*1200, i2=f.fr/1200, emi2=f.p*i2*Math.pow(1+i2,n)/(Math.pow(1+i2,n)-1), int2=emi2*n-f.p;
     return {hero:["Equivalent reducing rate (p.a.)",pct(rr),"loss"],rows:[["EMI on the flat-rate loan",inr(emi,0)],["Total interest at the flat rate",inr(int,0),"loss"],[`EMI if ${pct(f.fr,1)} were a reducing rate`,inr(emi2,0)],[`Interest if ${pct(f.fr,1)} were a reducing rate`,inr(int2,0)],["Extra interest because the rate is flat",inr(int-int2,0),"loss"]]}},
   formula:"Flat-rate interest = loan × flat rate × years, charged on the full loan for the whole tenure, and EMI = (loan + interest) ÷ months. The equivalent reducing rate is the yearly rate at which those same EMIs would repay the loan on a reducing balance. It is found by solving loan = EMI × (1 − (1 + i)<sup>−n</sup>) ÷ i for the monthly rate i, and multiplying by 12."},
+ {id:"loan-eligibility",group:"Loans & growth",ic:"LE",name:"Loan Eligibility Calculator",lede:"Estimate the largest loan you can get on your income and existing EMIs.",
+  zeroOk:["emi"],
+  fields:[["inc","Net monthly income",100000,"₹"],["emi","Existing EMIs per month",10000,"₹"],["foir","Share of income lenders allow for EMIs",50,"%"],["r","Interest rate (p.a.)",8.5,"%"],["y","Tenure",20,"years"]],
+  calc:f=>{ const max=f.inc*f.foir/100-f.emi;
+    if(max<=0) return {hero:["Maximum loan","₹0"],rows:[["EMI you can take on","₹0"]],note:"Your existing EMIs already use up the share of income lenders usually allow."};
+    const i=f.r/1200, n=Math.round(f.y*12), loan=max*(1-Math.pow(1+i,-n))/i;
+    return {hero:["Maximum loan",inr(loan,0)],rows:[["EMI you can take on",inr(max,0)],["Total interest on that loan",inr(max*n-loan,0),"loss"],["Total of all EMIs as a share of income",pct((max+f.emi)/f.inc*100)]]}},
+  formula:"Lenders cap your total EMIs at a share of your income, called FOIR (fixed obligations to income ratio). EMI you can take on = income × FOIR − existing EMIs. Maximum loan = that EMI × (1 − (1 + i)<sup>−n</sup>) ÷ i, where i is the monthly rate and n is the number of months. Lenders also look at your credit score, age, job and the property's value, so the final offer can differ."},
  {id:"ssy",group:"Savings & salary",ic:"SS",name:"Sukanya Samriddhi Yojana Calculator",lede:"Estimate the tax-free maturity value of a Sukanya Samriddhi account for your daughter.",
   fields:[["d","Yearly deposit",150000,"₹"],["r","Interest rate (p.a.)",8.2,"%"],["age","Girl's age when the account is opened",5,"years"]],
   calc:f=>{ const dep=Math.min(f.d,150000); let b=0; for(let y=1;y<=21;y++){ if(y<=15) b+=dep; b*=1+f.r/100; } const inv=dep*15;
@@ -234,6 +268,17 @@ const CALCS = [
     return {hero:["Tax-free HRA in a metro city",inr(m,0),"gain"],rows:[["Tax-free HRA in other cities",inr(nm,0),"gain"],["Taxable HRA in a metro city",inr(f.hra-m,0),f.hra>m?"loss":""],["Taxable HRA in other cities",inr(f.hra-nm,0),f.hra>nm?"loss":""],["Limit 1: HRA received",inr(f.hra,0)],["Limit 2: rent paid − 10% of basic",inr(over,0)],["Limit 3: 50% of basic (metro) / 40% (others)",`${inr(f.basic*0.5,0)} / ${inr(f.basic*0.4,0)}`]],
       note:over===0?"Rent paid is not more than 10% of basic salary, so no HRA is tax-free.":null}},
   formula:"Tax-free HRA is the smallest of three amounts: the HRA you received, the rent you paid minus 10% of basic salary, and 50% of basic salary in Delhi, Mumbai, Kolkata or Chennai (40% elsewhere). Basic salary includes dearness allowance where it counts for retirement benefits. The exemption is available only under the old tax regime."},
+ {id:"scss",group:"Savings & salary",ic:"SC",name:"Senior Citizens Savings Scheme Calculator",lede:"Find the quarterly interest and total return from a Senior Citizens Savings Scheme deposit.",
+  fields:[["p","Deposit",1500000,"₹"],["r","Interest rate (p.a.)",8.2,"%"],["y","Tenure",5,"years"]],
+  calc:f=>{ const q=f.p*f.r/400, tot=q*4*f.y;
+    return {hero:["Interest every quarter",inr(q,0),"gain"],rows:[["Interest a year",inr(q*4,0),"gain"],["Monthly equivalent",inr(q/3,0)],["Total interest over the tenure",inr(tot,0),"gain"],["Principal returned at maturity",inr(f.p,0)],["Total received",inr(f.p+tot,0)]],bar:[f.p,tot],barLabels:["Deposit","Interest"],
+      note:f.p>3000000?"The scheme caps the total you can deposit, at ₹30 lakh at the time of writing. Check the current limit.":null}},
+  formula:"Quarterly interest = deposit × rate ÷ 4. Interest is paid out every quarter and does not compound, so total interest = quarterly interest × 4 × years, and the deposit is returned at maturity. The account runs for 5 years and can be extended. The government reviews the rate every quarter, and the default is the rate at the time of writing. A new deposit's rate stays fixed for its tenure."},
+ {id:"nsc",group:"Savings & salary",ic:"NS",name:"NSC Calculator",lede:"Estimate the maturity value of a National Savings Certificate and the interest earned each year.",
+  fields:[["p","Investment",100000,"₹"],["r","Interest rate (p.a.)",7.7,"%"],["y","Tenure",5,"years"]],
+  calc:f=>{ const n=Math.round(f.y), rows=[]; let b=f.p; for(let k=1;k<=n;k++){ const yi=b*f.r/100; rows.push([`Interest in year ${k}`,inr(yi,0)]); b+=yi; }
+    return {hero:["Maturity value",inr(b,0)],rows:[["Total interest",inr(b-f.p,0),"gain"],...rows],bar:[f.p,b-f.p],barLabels:["Investment","Interest"]}},
+  formula:"Maturity = P × (1 + r)<sup>n</sup>. NSC interest is compounded every year but paid only at maturity, so each year's interest is added to the balance. The government reviews the rate every quarter. A certificate keeps the rate it was bought at, and the default is the rate at the time of writing."},
  {id:"percentage",group:"Everyday",ic:"%",name:"Percentage Calculator",lede:"Three common percentage questions, answered at once.",
   fields:[["a","Value A",25,""],["b","Value B",480,""]],
   calc:f=>{const ch=(f.b-f.a)/f.a*100;
@@ -243,7 +288,12 @@ const CALCS = [
   fields:[["a","Amount",10000,"₹"],["r","GST rate",18,"%"]],
   calc:f=>{ const g=f.a*f.r/100, base=f.a*100/(100+f.r);
     return {hero:["Price including GST",inr(f.a+g)],rows:[["GST to add",inr(g)],["CGST and SGST (each, within a state)",inr(g/2)],["IGST (between states)",inr(g)],[`If ${inr(f.a,0)} already includes GST: price before GST`,inr(base)],[`GST included in ${inr(f.a,0)}`,inr(f.a-base)]]}},
-  formula:"Adding GST: GST = amount × rate ÷ 100, and the total is amount + GST. Removing GST from a price that already includes it: price before GST = price × 100 ÷ (100 + rate). Within a state, GST is split equally into CGST and SGST. On sales between states it is charged as IGST. Use the rate that applies to your goods or service."}
+  formula:"Adding GST: GST = amount × rate ÷ 100, and the total is amount + GST. Removing GST from a price that already includes it: price before GST = price × 100 ÷ (100 + rate). Within a state, GST is split equally into CGST and SGST. On sales between states it is charged as IGST. Use the rate that applies to your goods or service."},
+ {id:"simple-interest",group:"Everyday",ic:"SI",name:"Simple Interest Calculator",lede:"Work out simple interest and the total amount on a sum of money.",
+  fields:[["p","Principal",100000,"₹"],["r","Interest rate (p.a.)",8,"%"],["t","Time",3,"years"]],
+  calc:f=>{ const si=f.p*f.r*f.t/100, ci=f.p*Math.pow(1+f.r/100,f.t)-f.p;
+    return {hero:["Simple interest",inr(si,0),"gain"],rows:[["Total amount",inr(f.p+si,0)],["Interest per year",inr(si/f.t,0)],["Interest per month",inr(si/f.t/12,0)],["Compound interest for comparison (yearly)",inr(ci,0)]],bar:[f.p,si],barLabels:["Principal","Interest"]}},
+  formula:"Simple interest = P × R × T ÷ 100, where P is the principal, R is the yearly rate and T is the time in years. The interest is the same every year because it is always worked out on the original principal. For time in months, divide by 12. For example, 18 months is 1.5 years."}
 ];
 
 

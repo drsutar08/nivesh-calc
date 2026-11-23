@@ -142,6 +142,18 @@ const CALCS = [
     const ann=(Math.pow(re/f.a,1/n)-1)*100;
     return {hero:["Value with dividends reinvested",inr(re,0)],rows:[["Value without reinvesting",inr(plain,0)],["Dividends taken as cash (after tax)",inr(cash,0)],["Total without reinvesting",inr(plain+cash,0)],["Extra from reinvesting",inr(re-plain-cash,0),re>plain+cash?"gain":""],["Annualised return with reinvesting",pct(ann),sign(ann)]]}},
   formula:"Each year the share price grows by the rate you enter, and the dividend (yield × value) is paid after tax. With reinvestment, the dividend buys more shares, so next year's growth and dividend are on a larger holding. Without reinvestment, the dividends are kept as cash. This assumes the yield and growth stay constant, and it leaves out brokerage."},
+ {id:"loss-recovery",group:"Stocks",ic:"LR",name:"Loss Recovery Calculator",lede:"See how big a gain you need to recover from a loss, and how long it may take.",
+  fields:[["buy","Your buy price",1000,"₹"],["cur","Current price",600,"₹"],["r","Expected return (p.a.)",12,"%"]],
+  calc:f=>{ if(f.cur>=f.buy) return {hero:["Gain needed to break even","0%","gain"],rows:[["Current gain",pct((f.cur/f.buy-1)*100),"gain"]],note:"The current price is not below your buy price, so there is no loss to recover."};
+    const loss=(1-f.cur/f.buy)*100, need=(f.buy/f.cur-1)*100, yrs=Math.log(f.buy/f.cur)/Math.log(1+f.r/100);
+    return {hero:["Gain needed to break even",pct(need),"loss"],rows:[["Loss so far",pct(loss),"loss"],[`Years to recover at ${pct(f.r,1)} a year`,num(yrs,1)+" years"],["Price needed to break even",inr(f.buy)],["Rise needed from today",inr(f.buy-f.cur)]]}},
+  formula:"Loss = 1 − current price ÷ buy price. Gain needed = buy price ÷ current price − 1, which is always larger than the loss: a 40% fall needs a 66.7% gain. Years to recover = ln(buy ÷ current) ÷ ln(1 + yearly return). Dividends, charges and tax are not included."},
+ {id:"roe",group:"Stocks",ic:"RO",name:"ROE Calculator",lede:"Work out return on equity and break it down with DuPont analysis.",
+  fields:[["np","Net profit",120,"₹ cr"],["rev","Revenue",1000,"₹ cr"],["ta","Total assets",1500,"₹ cr"],["eq","Shareholders' equity",800,"₹ cr"]],
+  calc:f=>{ const roe=f.np/f.eq*100, roa=f.np/f.ta*100, nm=f.np/f.rev*100, at=f.rev/f.ta, em=f.ta/f.eq;
+    return {hero:["Return on equity (ROE)",pct(roe),sign(roe)],rows:[["Net profit margin",pct(nm)],["Asset turnover",num(at,2)+"×"],["Equity multiplier (assets ÷ equity)",num(em,2)+"×"],["DuPont check: margin × turnover × multiplier",pct(nm*at*em)],["Return on assets (ROA)",pct(roa)]],
+      note:em>4?"An equity multiplier this high means the company relies heavily on borrowing, which lifts ROE but adds risk.":null}},
+  formula:"ROE = net profit ÷ shareholders' equity. DuPont analysis splits it into three parts: ROE = net profit margin (profit ÷ revenue) × asset turnover (revenue ÷ assets) × equity multiplier (assets ÷ equity). It shows whether a high ROE comes from profitability, efficiency or borrowing. Use the same units, such as ₹ crore, for every figure."},
  {id:"sip",group:"Mutual funds",ic:"↻",name:"SIP Calculator",lede:"Estimate what a monthly investment grows to over time.",
   fields:[["p","Monthly investment",10000,"₹"],["r","Expected return (p.a.)",12,"%"],["y","Duration",15,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12, fv= i? f.p*((Math.pow(1+i,n)-1)/i)*(1+i) : f.p*n, inv=f.p*n;
@@ -237,6 +249,21 @@ const CALCS = [
     const te=tot*t/100, mv=te-f.eq;
     return {hero:["Suggested equity share",pct(t,0)],rows:[["Suggested debt share",pct(100-t,0)],["Your equity share now",pct(f.eq/tot*100)],["Target equity amount",inr(te,0)],["Target debt amount",inr(tot-te,0)],["To rebalance",Math.abs(mv)<1?"No change needed":mv>0?`Move ${inr(mv,0)} from debt to equity`:`Move ${inr(-mv,0)} from equity to debt`]]}},
   formula:"Suggested equity % = rule number − your age, kept between 0% and 100%, and the rest goes to debt. A rule number of 100 is conservative, 110 is moderate and 120 is aggressive. Target amounts apply those shares to your current total, and the difference from what you hold now is the amount to move. This is a starting point only. Your goals, income stability and comfort with risk matter more than age alone."},
+ {id:"sip-time",group:"Mutual funds",ic:"TM",name:"SIP Time Calculator",lede:"Find how long a monthly SIP takes to reach your target amount.",
+  zeroOk:["have"],
+  fields:[["goal","Target amount",5000000,"₹"],["sip","Monthly SIP",20000,"₹"],["r","Expected return (p.a.)",12,"%"],["have","Amount already invested",0,"₹"]],
+  calc:f=>{ if(f.have>=f.goal) return {hero:["Time to reach your goal","Already there","gain"],rows:[],note:"Your current investments already meet the target."};
+    const i=f.r/1200; let v=f.have, k=0; while(v<f.goal && k<1200){ v=(v+f.sip)*(1+i); k++; }
+    const y=Math.floor(k/12), m=k%12, inv=f.have+f.sip*k;
+    return {hero:["Time to reach your goal",k>=1200?"More than 100 years":`${y} ${y===1?"yr":"yrs"} ${m} ${m===1?"month":"months"}`],rows:[["Number of SIP instalments",k>=1200?"—":num(k,0)],["Total you invest",k>=1200?"—":inr(inv,0)],["Growth",k>=1200?"—":inr(v-inv,0),"gain"],["Value when you reach it",k>=1200?"—":inr(v,0)]]}},
+  formula:"Each month the SIP is added and the total grows at the monthly rate (yearly return ÷ 12), starting from any amount already invested. The time to reach the goal is the first month the value reaches the target. Returns are assumed to be steady, which real markets are not."},
+ {id:"child-education",group:"Mutual funds",ic:"ED",name:"Child Education Planner",lede:"Estimate the future cost of your child's education and the SIP or lump sum needed for it.",
+  zeroOk:["have"],
+  fields:[["cost","Cost of the course today",2000000,"₹"],["y","Years until it starts",12,"years"],["ei","Education cost inflation (p.a.)",8,"%"],["have","Savings already set aside",200000,"₹"],["r","Expected return (p.a.)",11,"%"]],
+  calc:f=>{ const n=Math.round(f.y*12), fut=f.cost*Math.pow(1+f.ei/100,f.y), hv=f.have*Math.pow(1+f.r/100,f.y), gap=Math.max(0,fut-hv), i=f.r/1200, k=((Math.pow(1+i,n)-1)/i)*(1+i);
+    return {hero:["Future cost of the course",inr(fut,0)],rows:[["Your savings will grow to",inr(hv,0)],["Still needed",inr(gap,0),gap>0?"loss":"gain"],["Monthly SIP needed",inr(gap/k,0)],["Or a lump sum today of",inr(gap/Math.pow(1+f.r/100,f.y),0)]],
+      note:gap===0?"Your existing savings are expected to cover the full cost.":null}},
+  formula:"Future cost = today's cost × (1 + education inflation)<sup>years</sup>. Existing savings grow at the expected return. The monthly SIP needed = amount still needed ÷ [((1 + i)<sup>n</sup> − 1) ÷ i × (1 + i)], where i is the monthly rate and n is the number of months. The lump sum needed today = amount still needed ÷ (1 + return)<sup>years</sup>."},
  {id:"emi",group:"Loans & growth",ic:"≡",name:"EMI Calculator",lede:"Find the monthly instalment and total interest on a loan.",
   fields:[["p","Loan amount",3000000,"₹"],["r","Interest rate (p.a.)",8.5,"%"],["y","Tenure",20,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12,e= i? f.p*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1) : f.p/n,tot=e*n;
@@ -355,6 +382,14 @@ const CALCS = [
     return {hero:[gap>=0?"Buying ends ahead by":"Renting ends ahead by",inr(Math.abs(gap),0)],rows:[["Buyer's net worth",inr(bw,0)],["Renter's net worth",inr(renter,0)],["Home value at the end",inr(home,0)],["Monthly EMI",inr(emi,0)],["Rent in the first year",inr(f.rent,0)+" a month"],["Rent in the final year",inr(lastRent,0)+" a month"],["Cash needed upfront to buy",inr(f.price*(f.down+f.cost)/100,0)]],
       note:"Assumes the renter invests the upfront cash and any month the EMI is above the rent, and the buyer invests the difference when rent is higher. Maintenance, property tax, tax benefits and selling costs are not included."}},
   formula:"Buyer: pays the EMI on (price − down payment) for the full tenure, then owns a home worth price × (1 + home value rise)<sup>years</sup>. Renter: invests the down payment plus buying costs on day one, pays rent that rises every year, and invests the gap whenever the EMI is higher than the rent. If rent becomes higher than the EMI, the buyer invests the gap instead. Both investments grow monthly at the return you enter, and net worth is compared at the end."},
+ {id:"home-affordability",group:"Loans & growth",ic:"HA",name:"Home Affordability Calculator",lede:"Find the most expensive home you can afford with your income and savings.",
+  zeroOk:["emi"],
+  fields:[["inc","Net monthly income",150000,"₹"],["emi","Existing EMIs per month",0,"₹"],["foir","Share of income lenders allow for EMIs",50,"%"],["rate","Home loan rate (p.a.)",8.5,"%"],["y","Loan tenure",20,"years"],["sav","Savings for the down payment and costs",2000000,"₹"],["ltv","Maximum loan as a share of the price",80,"%"],["cost","Buying costs (stamp duty, registration)",7,"%"]],
+  calc:f=>{ const me=f.inc*f.foir/100-f.emi, i=f.rate/1200, n=Math.round(f.y*12), L=me>0?me*(1-Math.pow(1+i,-n))/i:0, c=f.cost/100, l=f.ltv/100;
+    const pInc=(L+f.sav)/(1+c), pSav=1+c-l>0?f.sav/(1+c-l):Infinity, p=Math.min(pInc,pSav), loan=Math.max(0,p*(1+c)-f.sav), e=loan*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1);
+    return {hero:["Home price you can afford",inr(p,0)],rows:[["Home loan",inr(loan,0)],["EMI on that loan",inr(e,0)],["Down payment",inr(p-loan,0)],["Buying costs",inr(p*c,0)],["What limits the price",pInc<=pSav?"Your income (EMI limit)":"Your savings (down payment)"],["Largest loan your income supports",inr(L,0)]],
+      note:me<=0?"Your existing EMIs use up the share of income lenders usually allow, so the price depends on your savings alone.":null}},
+  formula:"The largest loan your income supports comes from the EMI limit: (income × FOIR − existing EMIs), repaid over the tenure at the loan rate. Your savings must cover the down payment and the buying costs. The price you can afford is the lower of two limits: (largest loan + savings) ÷ (1 + buying costs), and savings ÷ (1 + buying costs − maximum loan share). RBI caps the loan-to-value ratio according to loan size, and lenders also check your credit score."},
  {id:"ssy",group:"Savings & salary",ic:"SS",name:"Sukanya Samriddhi Yojana Calculator",lede:"Estimate the tax-free maturity value of a Sukanya Samriddhi account for your daughter.",
   fields:[["d","Yearly deposit",150000,"₹"],["r","Interest rate (p.a.)",8.2,"%"],["age","Girl's age when the account is opened",5,"years"]],
   calc:f=>{ const dep=Math.min(f.d,150000); let b=0; for(let y=1;y<=21;y++){ if(y<=15) b+=dep; b*=1+f.r/100; } const inv=dep*15;
@@ -417,6 +452,11 @@ const CALCS = [
     return {hero:["New yearly salary",inr(ns,0),"gain"],rows:[["Increase per year",inr(ns-f.s,0),"gain"],["New monthly salary",inr(ns/12,0)],["Increase per month",inr((ns-f.s)/12,0),"gain"],["Real hike after inflation",pct(real),sign(real)],["Salary in 5 years at the same hike every year",inr(f.s*Math.pow(1+f.h/100,5),0)]],
       note:real<0?"Your hike is below inflation, so your salary buys less than it did last year.":null}},
   formula:"New salary = current salary × (1 + hike ÷ 100). Real hike = (1 + hike) ÷ (1 + inflation) − 1, which shows how much more your salary can actually buy. Take-home pay rises by less than the gross hike because of tax and deductions."},
+ {id:"sgb",group:"Savings & salary",ic:"SG",name:"Sovereign Gold Bond Calculator",lede:"Estimate the total return on a Sovereign Gold Bond, including its yearly interest.",
+  fields:[["ip","Issue price per gram",5000,"₹"],["g","Grams held",10,"grams"],["cp","Gold price at redemption (per gram)",7500,"₹"],["y","Years held",8,"years"],["ir","Interest rate on the issue price (p.a.)",2.5,"%"]],
+  calc:f=>{ const inv=f.ip*f.g, int=inv*f.ir/100*f.y, val=f.cp*f.g, cg=val-inv, tot=cg+int, ann=(Math.pow((val+int)/inv,1/f.y)-1)*100;
+    return {hero:["Total return",inr(tot,0),sign(tot)],rows:[["Amount invested",inr(inv,0)],["Interest earned",inr(int,0),"gain"],["Value at redemption",inr(val,0)],["Gain from the gold price",inr(cg,0),sign(cg)],["Total return (%)",pct(tot/inv*100),sign(tot)],["Annualised return",pct(ann),sign(ann)]]}},
+  formula:"Interest = issue price × grams × interest rate × years, paid every six months on the issue price, not on the current gold price. Value at redemption = gold price × grams. Total return = gold gain + interest. The annualised return treats the interest as cash received rather than reinvested. Interest is taxable at your slab rate, and the tax on the redemption gain depends on how and when you exit."},
  {id:"percentage",group:"Everyday",ic:"%",name:"Percentage Calculator",lede:"Three common percentage questions, answered at once.",
   fields:[["a","Value A",25,""],["b","Value B",480,""]],
   calc:f=>{const ch=(f.b-f.a)/f.a*100;
@@ -458,7 +498,20 @@ const CALCS = [
   calc:f=>{ const p=f.sp-f.cost;
     return {hero:["Profit margin",pct(p/f.sp*100),sign(p)],rows:[["Profit per unit",inr(p),sign(p)],["Markup on cost",pct(p/f.cost*100),sign(p)],[`Selling price for a ${num(f.tm)}% margin`,f.tm<100?inr(f.cost/(1-f.tm/100)):"—"],[`Markup needed for a ${num(f.tm)}% margin`,f.tm<100?pct(f.tm/(100-f.tm)*100):"—"]],
       note:f.tm>=100?"A margin must be below 100% of the selling price.":null}},
-  formula:"Profit = selling price − cost. Margin = profit ÷ selling price, and markup = profit ÷ cost. They are not the same: a 25% markup gives a 20% margin. Selling price for a target margin = cost ÷ (1 − margin). Prices here are before GST."}
+  formula:"Profit = selling price − cost. Margin = profit ÷ selling price, and markup = profit ÷ cost. They are not the same: a 25% markup gives a 20% margin. Selling price for a target margin = cost ÷ (1 − margin). Prices here are before GST."},
+ {id:"net-worth",group:"Everyday",ic:"NW",name:"Net Worth Calculator",lede:"Add up what you own and what you owe to find your net worth.",
+  zeroOk:["cash","inv","ret","prop","gold","hl","ol","cc"],
+  fields:[["cash","Cash and bank balances",200000,"₹"],["inv","Stocks and mutual funds",1500000,"₹"],["ret","EPF, PPF and NPS",800000,"₹"],["prop","Property (current value)",6000000,"₹"],["gold","Gold and other assets",300000,"₹"],["hl","Home loan outstanding",3500000,"₹"],["ol","Other loans (car, personal, education)",200000,"₹"],["cc","Credit card dues",20000,"₹"]],
+  calc:f=>{ const a=f.cash+f.inv+f.ret+f.prop+f.gold, l=f.hl+f.ol+f.cc, nw=a-l, liq=f.cash+f.inv+f.gold-f.ol-f.cc;
+    return {hero:["Net worth",inr(nw,0),sign(nw)],rows:[["Total assets",inr(a,0)],["Total liabilities",inr(l,0),l>0?"loss":""],["Debt as a share of assets",a>0?pct(l/a*100):"—"],["Net worth excluding property and its loan",inr(nw-f.prop+f.hl,0),sign(nw-f.prop+f.hl)],["Easily usable net worth (cash, investments, gold − other debts)",inr(liq,0),sign(liq)]]}},
+  formula:"Net worth = total assets − total liabilities. Assets are what you own at today's value. Liabilities are what you still owe. Excluding your home and its loan shows how much wealth you have outside the house you live in. Track it once or twice a year to see your progress."},
+ {id:"break-even",group:"Everyday",ic:"BE",name:"Break-even Calculator",lede:"Find how many units a business must sell to cover its costs, and to hit a profit target.",
+  zeroOk:["tp"],
+  fields:[["fc","Fixed costs per month (rent, salaries)",200000,"₹"],["sp","Selling price per unit",500,"₹"],["vc","Variable cost per unit",300,"₹"],["tp","Target profit per month",50000,"₹"]],
+  calc:f=>{ const cm=f.sp-f.vc; if(cm<=0) return {hero:["Break-even units","—"],rows:[],note:"The selling price must be higher than the variable cost per unit, or each sale adds to the loss."};
+    const be=f.fc/cm, tu=(f.fc+f.tp)/cm;
+    return {hero:["Break-even units per month",num(Math.ceil(be),0)],rows:[["Break-even revenue",inr(be*f.sp,0)],["Contribution per unit",inr(cm)],["Contribution margin",pct(cm/f.sp*100)],["Units for the target profit",num(Math.ceil(tu),0)],["Revenue for the target profit",inr(tu*f.sp,0)]]}},
+  formula:"Contribution per unit = selling price − variable cost per unit. It is what each sale adds towards fixed costs and profit. Break-even units = fixed costs ÷ contribution per unit, rounded up. Units for a target profit = (fixed costs + target profit) ÷ contribution per unit. Prices and costs here are before GST."}
 ];
 
 

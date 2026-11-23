@@ -82,6 +82,11 @@ const CALCS = [
     return {hero:["Gain to book tax-free",inr(h,0),h>0?"gain":""],rows:[["Value to sell and buy back",inr(sell,0)],["Exemption still available",inr(room,0)],["Tax this gain would cost if booked in a later year",inr(h*f.rate/100,0),h>0?"gain":""],["Unrealised gain left after harvesting",inr(f.gain-h,0)],["Tax if you booked all gains this year",inr(all,0),all>0?"loss":""]],
       note:room===0?"You have already used this year's exemption, so there is nothing left to harvest tax-free.":null}},
   formula:"Gain you can book tax-free = the smaller of your unrealised long-term gain and the exemption left this year (exemption − gains already booked). Value to sell = that gain ÷ (unrealised gain ÷ current value), assuming the gain is spread evenly across the holding. Buying back at today's price resets your cost, so less gain is taxed later. The defaults reflect the rules for listed equity at the time of writing, so check the current exemption and rate."},
+ {id:"options-pl",group:"Stocks",ic:"CP",name:"Options Profit/Loss Calculator",lede:"See the profit or loss at expiry for buying or selling a call or put option.",
+  fields:[["k","Strike price",1500,"₹"],["prem","Premium per share",40,"₹"],["lot","Lot size",250,"units"],["lots","Number of lots",1,"lots"],["s","Price at expiry",1600,"₹"]],
+  calc:f=>{ const q=f.lot*f.lots, bc=(Math.max(0,f.s-f.k)-f.prem)*q, bp=(Math.max(0,f.k-f.s)-f.prem)*q;
+    return {hero:["Buy call: profit / loss",inr(bc,0),sign(bc)],rows:[["Buy put: profit / loss",inr(bp,0),sign(bp)],["Sell call: profit / loss",inr(-bc,0),sign(-bc)],["Sell put: profit / loss",inr(-bp,0),sign(-bp)],["Call break-even price",inr(f.k+f.prem)],["Put break-even price",inr(f.k-f.prem)],["Premium for all lots",inr(f.prem*q,0)],["Quantity",num(q,0)+" units"]]}},
+  formula:"At expiry a call is worth max(0, expiry price − strike) and a put is worth max(0, strike − expiry price). Buyer's profit = (value at expiry − premium) × quantity, and the seller's profit is the opposite. Break-even is strike + premium for a call and strike − premium for a put. Brokerage, STT and other charges are not included, and lot sizes change, so check the exchange's current lot size."},
  {id:"sip",group:"Mutual funds",ic:"↻",name:"SIP Calculator",lede:"Estimate what a monthly investment grows to over time.",
   fields:[["p","Monthly investment",10000,"₹"],["r","Expected return (p.a.)",12,"%"],["y","Duration",15,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12, fv= i? f.p*((Math.pow(1+i,n)-1)/i)*(1+i) : f.p*n, inv=f.p*n;
@@ -129,6 +134,14 @@ const CALCS = [
     const x=(Math.pow(1+(lo+hi)/2,12)-1)*100, g=f.val-inv;
     return {hero:["XIRR (annualised return)",pct(x),sign(x)],rows:[["Total invested",inr(inv,0)],["Gain",inr(g,0),sign(g)],["Absolute return",pct(g/inv*100),sign(g)],["Instalments counted",num(n,0)]],bar:g>0?[inv,g]:null}},
   formula:"XIRR is the yearly rate at which every SIP instalment, grown to today, adds up to the current value. This calculator assumes equal instalments on the same date each month, the first one m months ago, and solves for the monthly rate r. XIRR = (1 + r)<sup>12</sup> − 1. For irregular amounts or dates, use the XIRR function in a spreadsheet."},
+ {id:"direct-vs-regular",group:"Mutual funds",ic:"D/R",name:"Direct vs Regular Mutual Fund Calculator",lede:"See how much a higher expense ratio costs you over the years.",
+  zeroOk:["lump"],
+  fields:[["sip","Monthly SIP",10000,"₹"],["lump","One-time investment",0,"₹"],["y","Years",20,"years"],["r","Expected return before costs (p.a.)",12,"%"],["ed","Direct plan expense ratio",0.5,"%"],["erg","Regular plan expense ratio",1.5,"%"]],
+  calc:f=>{ const n=Math.round(f.y*12), fv=er=>{const i=(f.r-er)/1200; const s=i?f.sip*((Math.pow(1+i,n)-1)/i)*(1+i):f.sip*n; return s+f.lump*Math.pow(1+(f.r-er)/100,f.y)};
+    const d=fv(f.ed), g=fv(f.erg), inv=f.sip*n+f.lump, diff=d-g;
+    return {hero:["Extra corpus with the direct plan",inr(diff,0),diff>0?"gain":sign(diff)],rows:[["Direct plan value",inr(d,0)],["Regular plan value",inr(g,0)],["Total invested",inr(inv,0)],["Share of the direct plan's corpus lost in the regular plan",pct(diff/d*100)],["Difference in expense ratio",pct(f.erg-f.ed)]],
+      note:f.erg<f.ed?"The regular plan ratio is usually higher than the direct plan ratio, because it includes the distributor's commission.":null}},
+  formula:"Each plan is projected with its net return: expected return − expense ratio. SIP value = P × [((1 + i)<sup>n</sup> − 1) ÷ i] × (1 + i), where i is the net monthly rate and n is the number of months. A one-time investment grows at the net yearly rate. The difference is what the higher expense ratio costs over the period."},
  {id:"emi",group:"Loans & growth",ic:"≡",name:"EMI Calculator",lede:"Find the monthly instalment and total interest on a loan.",
   fields:[["p","Loan amount",3000000,"₹"],["r","Interest rate (p.a.)",8.5,"%"],["y","Tenure",20,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12,e= i? f.p*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1) : f.p/n,tot=e*n;
@@ -160,11 +173,11 @@ const CALCS = [
   calc:f=>{const k=Math.pow(1+f.r/100,f.y);
     return {hero:["Same things will cost",inr(f.a*k,0)],rows:[["Today's money will buy only",inr(f.a/k,0),"loss"],["Loss of buying power",pct((1-1/k)*100),"loss"],["Prices rise by",pct((k-1)*100)]]}},
   formula:"Future cost = amount × (1 + inflation)<sup>years</sup>. Buying power of today's money = amount ÷ (1 + inflation)<sup>years</sup>."},
- {id:"ppf",group:"Loans & growth",ic:"PF",name:"PPF Calculator",lede:"Estimate the tax-free maturity value of your Public Provident Fund account.",
+ {id:"ppf",group:"Savings & salary",ic:"PF",name:"PPF Calculator",lede:"Estimate the tax-free maturity value of your Public Provident Fund account.",
   fields:[["d","Yearly deposit",150000,"₹"],["r","Interest rate (p.a.)",7.1,"%"],["y","Years",15,"years"]],
   calc:f=>{ const n=Math.round(f.y), d=Math.min(f.d,150000); let a=0; for(let j=1;j<=n;j++) a+=d*Math.pow(1+f.r/100,j); const inv=d*n;
     const notes=[]; if(f.d>150000) notes.push("PPF accepts at most ₹1.5 lakh a year, so the result uses ₹1.5 lakh."); if(n<15) notes.push("A PPF account matures after 15 years. You can then extend it in blocks of 5 years.");
-    return {hero:["Maturity value",inr(a,0)],rows:[["Total deposited",inr(inv,0)],["Interest earned (tax-free)",inr(a-inv,0),"gain"],["Years counted",num(n,0)]],bar:[inv,a-inv],note:notes.join(" ")||null}},
+    return {hero:["Maturity value",inr(a,0)],rows:[["Total deposited",inr(inv,0)],["Interest earned (tax-free)",inr(a-inv,0),"gain"],["Years counted",num(n,0)]],bar:[inv,a-inv],barLabels:["Deposits","Interest"],note:notes.join(" ")||null}},
   formula:"Maturity = D × [(1 + r) + (1 + r)<sup>2</sup> + … + (1 + r)<sup>n</sup>], assuming you deposit the full amount before 5 April each year so it earns interest for the whole year. PPF interest is worked out monthly and credited once a year. The government reviews the rate every quarter, and the default is the rate at the time of writing."},
  {id:"compound-interest",group:"Loans & growth",ic:"CI",name:"Compound Interest Calculator",lede:"See how compound interest grows your money, and how much more it earns than simple interest.",
   fields:[["p","Principal",100000,"₹"],["r","Interest rate (p.a.)",8,"%"],["y","Years",10,"years"],["m","Compounding times a year",4,"times"]],
@@ -180,6 +193,47 @@ const CALCS = [
     const ym=k=>{const y=Math.floor(k/12),mo=k%12;return `${y} ${y===1?"yr":"yrs"} ${mo} ${mo===1?"month":"months"}`}, saved=Math.max(0,orig-paid);
     return {hero:["Interest saved",inr(saved,0),saved>0?"gain":""],rows:[["EMI (unchanged)",inr(emi,0)],["New tenure",ym(m)],["Time saved",ym(n-m),n>m?"gain":""],["Interest without prepayment",inr(orig,0)],["Interest with prepayment",inr(paid,0)],["Total prepaid",inr(f.lump+f.extra*m,0)]]}},
   formula:"The EMI is worked out on the outstanding loan. The loan is then repaid month by month: each month's interest is balance × rate ÷ 12, and the EMI plus any extra payment clears that interest first and then the principal. A one-time prepayment comes off the balance before the first month. The EMI stays the same, so prepaying shortens the tenure. Check your loan terms for any prepayment charge."},
+ {id:"flat-vs-reducing",group:"Loans & growth",ic:"F/R",name:"Flat vs Reducing Rate Calculator",lede:"Convert a flat interest rate into the real reducing-balance rate on a loan.",
+  fields:[["p","Loan amount",500000,"₹"],["fr","Flat interest rate (p.a.)",10,"%"],["y","Tenure",3,"years"]],
+  calc:f=>{ const n=Math.round(f.y*12), int=f.p*f.fr*f.y/100, emi=(f.p+int)/n, pv=i=>emi*(1-Math.pow(1+i,-n))/i;
+    let lo=1e-9, hi=1; for(let k=0;k<200;k++){const m=(lo+hi)/2; if(pv(m)>f.p) lo=m; else hi=m;}
+    const rr=(lo+hi)/2*1200, i2=f.fr/1200, emi2=f.p*i2*Math.pow(1+i2,n)/(Math.pow(1+i2,n)-1), int2=emi2*n-f.p;
+    return {hero:["Equivalent reducing rate (p.a.)",pct(rr),"loss"],rows:[["EMI on the flat-rate loan",inr(emi,0)],["Total interest at the flat rate",inr(int,0),"loss"],[`EMI if ${pct(f.fr,1)} were a reducing rate`,inr(emi2,0)],[`Interest if ${pct(f.fr,1)} were a reducing rate`,inr(int2,0)],["Extra interest because the rate is flat",inr(int-int2,0),"loss"]]}},
+  formula:"Flat-rate interest = loan × flat rate × years, charged on the full loan for the whole tenure, and EMI = (loan + interest) ÷ months. The equivalent reducing rate is the yearly rate at which those same EMIs would repay the loan on a reducing balance. It is found by solving loan = EMI × (1 − (1 + i)<sup>−n</sup>) ÷ i for the monthly rate i, and multiplying by 12."},
+ {id:"ssy",group:"Savings & salary",ic:"SS",name:"Sukanya Samriddhi Yojana Calculator",lede:"Estimate the tax-free maturity value of a Sukanya Samriddhi account for your daughter.",
+  fields:[["d","Yearly deposit",150000,"₹"],["r","Interest rate (p.a.)",8.2,"%"],["age","Girl's age when the account is opened",5,"years"]],
+  calc:f=>{ const dep=Math.min(f.d,150000); let b=0; for(let y=1;y<=21;y++){ if(y<=15) b+=dep; b*=1+f.r/100; } const inv=dep*15;
+    const notes=[]; if(f.d>150000) notes.push("The scheme accepts at most ₹1.5 lakh a year, so the result uses ₹1.5 lakh."); if(f.age>10) notes.push("An account can only be opened for a girl aged 10 or under.");
+    return {hero:["Maturity value",inr(b,0)],rows:[["Total deposited (15 years)",inr(inv,0)],["Interest earned (tax-free)",inr(b-inv,0),"gain"],["Account matures when she is",num(Math.round(f.age)+21,0)+" years old"]],bar:[inv,b-inv],barLabels:["Deposits","Interest"],note:notes.join(" ")||null}},
+  formula:"You deposit for the first 15 years and the account matures 21 years after it is opened, so the balance keeps earning interest for 6 more years with no deposits. This calculator assumes each year's deposit is made at the start of the year and interest is compounded yearly. The government reviews the rate every quarter, and the default is the rate at the time of writing."},
+ {id:"nps",group:"Savings & salary",ic:"NP",name:"NPS Calculator",lede:"Estimate your National Pension System corpus, lump sum and monthly pension.",
+  fields:[["c","Monthly contribution",5000,"₹"],["age","Your age now",30,"years"],["ret","Retirement age",60,"years"],["r","Expected return (p.a.)",10,"%"],["ann","Share of corpus used to buy an annuity",40,"%"],["ar","Expected annuity rate (p.a.)",6,"%"]],
+  calc:f=>{ if(f.ret<=f.age) return {hero:["Corpus at retirement","—"],rows:[],note:"Retirement age must be more than your age now."};
+    if(f.ann>100) return {hero:["Corpus at retirement","—"],rows:[],note:"The annuity share cannot be more than 100%."};
+    const n=Math.round((f.ret-f.age)*12), i=f.r/1200, corp=f.c*((Math.pow(1+i,n)-1)/i)*(1+i), inv=f.c*n, a=corp*f.ann/100;
+    return {hero:["Corpus at retirement",inr(corp,0)],rows:[["Total contributed",inr(inv,0)],["Growth",inr(corp-inv,0),"gain"],["Lump sum you can withdraw",inr(corp-a,0)],["Used to buy an annuity",inr(a,0)],["Estimated monthly pension",inr(a*f.ar/1200,0)]],bar:[inv,corp-inv],barLabels:["Contributed","Growth"]}},
+  formula:"Corpus = P × [((1 + i)<sup>n</sup> − 1) ÷ i] × (1 + i), where P is the monthly contribution, i is the expected monthly return and n is the number of months to retirement. At retirement, part of the corpus must buy an annuity and the rest can be withdrawn. Monthly pension = annuity amount × annuity rate ÷ 12. PFRDA sets the minimum annuity share and the withdrawal rules, so check the current rules. Returns are not guaranteed."},
+ {id:"epf",group:"Savings & salary",ic:"EP",name:"EPF Calculator",lede:"Project your Employees' Provident Fund balance at retirement.",
+  zeroOk:["bal","inc"],
+  fields:[["basic","Monthly basic pay + DA",30000,"₹"],["bal","Current EPF balance",0,"₹"],["age","Your age now",30,"years"],["ret","Retirement age",58,"years"],["inc","Yearly salary increase",5,"%"],["r","EPF interest rate (p.a.)",8.25,"%"],["emp","Your contribution",12,"% of basic"],["er","Employer's share going to EPF",3.67,"% of basic"]],
+  calc:f=>{ if(f.ret<=f.age) return {hero:["EPF balance at retirement","—"],rows:[],note:"Retirement age must be more than your age now."};
+    const yrs=Math.round(f.ret-f.age); let b=f.bal, me=0, them=0, int=0;
+    for(let y=0;y<yrs;y++){ const pay=f.basic*Math.pow(1+f.inc/100,y), a=pay*f.emp/100, e=pay*f.er/100; let yi=0;
+      for(let m=0;m<12;m++){ b+=a+e; me+=a; them+=e; yi+=b*f.r/1200; } b+=yi; int+=yi; }
+    return {hero:["EPF balance at retirement",inr(b,0)],rows:[["Your contributions",inr(me,0)],["Employer contributions",inr(them,0)],["Interest earned",inr(int,0),"gain"],["Opening balance",inr(f.bal,0)],["Years counted",num(yrs,0)]],bar:[me+them+f.bal,int],barLabels:["Contributions","Interest"]}},
+  formula:"Each month, your contribution and the employer's EPF share are added to the balance. Interest for the year is worked out on the monthly running balance at the yearly rate ÷ 12, and credited once at the end of the year. Your salary rises by the yearly increase you enter. The employer's pension (EPS) contribution is not part of the EPF balance and is not included. The EPFO declares the interest rate each year, and the default is the rate at the time of writing."},
+ {id:"gratuity",group:"Savings & salary",ic:"GR",name:"Gratuity Calculator",lede:"Work out the gratuity you are due when you leave a job, and how much of it is tax-free.",
+  fields:[["sal","Last drawn monthly basic pay + DA",50000,"₹"],["y","Years of service",10,"years"],["cap","Tax-free gratuity limit",2000000,"₹"]],
+  calc:f=>{ const full=Math.floor(f.y), act=full+(f.y-full>0.5?1:0), g=f.sal*15/26*act, g2=f.sal*15/30*full, free=Math.min(g,f.cap);
+    return {hero:["Gratuity (employer covered by gratuity law)",inr(g,0)],rows:[["Years counted",num(act,0)],["Gratuity if the employer is not covered",inr(g2,0)],["Tax-free part",inr(free,0),"gain"],["Taxable part",inr(g-free,0),g>free?"loss":""]],
+      note:f.y<5?"Gratuity is normally paid only after 5 years of continuous service, except on death or disability. Fixed-term employees may qualify sooner under the labour codes.":null}},
+  formula:"For employers covered by gratuity law (the Payment of Gratuity Act, now part of the Code on Social Security): gratuity = last drawn salary × 15 ÷ 26 × years of service, where service of more than 6 months in the final year counts as a full year. For employers not covered, it is usually salary × 15 ÷ 30 × completed years. Salary means basic pay plus dearness allowance, and under the labour codes some allowances can also count. The tax-free limit is set by law and can change, and the default is the limit at the time of writing."},
+ {id:"hra",group:"Savings & salary",ic:"HR",name:"HRA Exemption Calculator",lede:"Find how much of your house rent allowance is tax-free under the old tax regime.",
+  fields:[["basic","Basic salary + DA (yearly)",500000,"₹"],["hra","HRA received (yearly)",250000,"₹"],["rent","Rent paid (yearly)",300000,"₹"]],
+  calc:f=>{ const over=Math.max(0,f.rent-f.basic*0.1), ex=c=>Math.min(f.hra,over,f.basic*c), m=ex(0.5), nm=ex(0.4);
+    return {hero:["Tax-free HRA in a metro city",inr(m,0),"gain"],rows:[["Tax-free HRA in other cities",inr(nm,0),"gain"],["Taxable HRA in a metro city",inr(f.hra-m,0),f.hra>m?"loss":""],["Taxable HRA in other cities",inr(f.hra-nm,0),f.hra>nm?"loss":""],["Limit 1: HRA received",inr(f.hra,0)],["Limit 2: rent paid − 10% of basic",inr(over,0)],["Limit 3: 50% of basic (metro) / 40% (others)",`${inr(f.basic*0.5,0)} / ${inr(f.basic*0.4,0)}`]],
+      note:over===0?"Rent paid is not more than 10% of basic salary, so no HRA is tax-free.":null}},
+  formula:"Tax-free HRA is the smallest of three amounts: the HRA you received, the rent you paid minus 10% of basic salary, and 50% of basic salary in Delhi, Mumbai, Kolkata or Chennai (40% elsewhere). Basic salary includes dearness allowance where it counts for retirement benefits. The exemption is available only under the old tax regime."},
  {id:"percentage",group:"Everyday",ic:"%",name:"Percentage Calculator",lede:"Three common percentage questions, answered at once.",
   fields:[["a","Value A",25,""],["b","Value B",480,""]],
   calc:f=>{const ch=(f.b-f.a)/f.a*100;

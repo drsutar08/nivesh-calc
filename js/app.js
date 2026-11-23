@@ -106,6 +106,18 @@ const CALCS = [
     const v=f.buy*f.q, own=v*f.m/100, fund=v-own, int=fund*f.r/100*f.d/365, gross=(f.sell-f.buy)*f.q, net=gross-int, roe=net/own*100, plain=(f.sell-f.buy)/f.buy*100;
     return {hero:["Net profit / loss after interest",inr(net,0),sign(net)],rows:[["Position value",inr(v,0)],["Your money (margin)",inr(own,0)],["Funded by the broker",inr(fund,0)],["Interest cost",inr(int,0),int>0?"loss":""],["Gross profit / loss",inr(gross,0),sign(gross)],["Return on your money with MTF",pct(roe),sign(roe)],["Return without MTF",pct(plain),sign(plain)],["Break-even sell price",inr(f.buy+int/f.q)]]}},
   formula:"Interest = amount funded × yearly rate × days held ÷ 365, where amount funded = position value × (100% − your margin). Net profit = (sell price − buy price) × quantity − interest. Return on your money = net profit ÷ your margin. Leverage multiplies both gains and losses. Brokerage, charges and any pledge fees are not included."},
+ {id:"graham-number",group:"Stocks",ic:"GN",name:"Graham Number Calculator",lede:"Estimate a stock's fair value with Benjamin Graham's formulas and see your margin of safety.",
+  fields:[["eps","Earnings per share (EPS)",50,"₹"],["bv","Book value per share",300,"₹"],["price","Current share price",450,"₹"],["g","Expected yearly earnings growth",10,"%"],["y","High-grade bond yield",7.5,"%"]],
+  calc:f=>{ const gn=Math.sqrt(22.5*f.eps*f.bv), gv=f.eps*(8.5+2*f.g)*4.4/f.y, mos=x=>(x-f.price)/x*100, pe=f.price/f.eps, pb=f.price/f.bv;
+    return {hero:["Graham number",inr(gn)],rows:[["Margin of safety at today's price",pct(mos(gn)),sign(mos(gn))],["Graham growth formula value",inr(gv)],["Margin of safety on that value",pct(mos(gv)),sign(mos(gv))],["P/E ratio",num(pe,2)],["P/B ratio",num(pb,2)],["P/E × P/B (Graham's limit is 22.5)",num(pe*pb,2),pe*pb>22.5?"loss":"gain"]],
+      note:f.g>15?"Graham's growth formula tends to overstate value when growth above about 15% is assumed. Treat the result with care.":null}},
+  formula:"Graham number = √(22.5 × EPS × book value per share). It is the highest price Graham thought a defensive investor should pay, based on a P/E of 15 and a P/B of 1.5. Graham's growth formula: value = EPS × (8.5 + 2g) × 4.4 ÷ Y, where g is the expected growth rate and Y is the current yield on high-grade bonds. Margin of safety = (value − price) ÷ value. These are rough screens, not a full valuation."},
+ {id:"fibonacci",group:"Stocks",ic:"FB",name:"Fibonacci Retracement Calculator",lede:"Find Fibonacci retracement and extension levels between a swing high and a swing low.",
+  fields:[["h","Swing high",1800,"₹"],["l","Swing low",1500,"₹"]],
+  calc:f=>{ if(f.h<=f.l) return {hero:["Range","—"],rows:[],note:"The swing high must be above the swing low."};
+    const r=f.h-f.l, lv=[23.6,38.2,50,61.8,78.6];
+    return {hero:["Range (high − low)",inr(r)],rows:[...lv.map(x=>[`Uptrend ${x}% pullback`,inr(f.h-r*x/100)]),["Uptrend 127.2% extension",inr(f.l+r*1.272)],["Uptrend 161.8% extension",inr(f.l+r*1.618)],...lv.map(x=>[`Downtrend ${x}% bounce`,inr(f.l+r*x/100)]),["Downtrend 127.2% extension",inr(f.h-r*1.272)],["Downtrend 161.8% extension",inr(f.h-r*1.618)]]}},
+  formula:"In an uptrend (the price rose from the low to the high), a retracement level = high − range × ratio. In a downtrend (the price fell from the high to the low), it is low + range × ratio, where range = high − low. The common ratios are 23.6%, 38.2%, 50%, 61.8% and 78.6%. Extensions project beyond the move at 127.2% and 161.8% of the range."},
  {id:"sip",group:"Mutual funds",ic:"↻",name:"SIP Calculator",lede:"Estimate what a monthly investment grows to over time.",
   fields:[["p","Monthly investment",10000,"₹"],["r","Expected return (p.a.)",12,"%"],["y","Duration",15,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12, fv= i? f.p*((Math.pow(1+i,n)-1)/i)*(1+i) : f.p*n, inv=f.p*n;
@@ -168,6 +180,22 @@ const CALCS = [
     const i=f.r/1200, k=n=>((Math.pow(1+i,n)-1)/i)*(1+i), n=Math.round(f.y*12), m=Math.round((f.y-f.d)*12), now=f.sip*k(n), later=f.sip*k(m), cost=now-later;
     return {hero:["Cost of waiting",inr(cost,0),cost>0?"loss":""],rows:[["Corpus if you start now",inr(now,0)],["Corpus if you start later",inr(later,0)],["Share of the corpus lost",pct(cost/now*100),cost>0?"loss":""],["Monthly SIP needed later to catch up",inr(now/k(m),0)],["Extra you would invest by starting now",inr(f.sip*(n-m),0)]]}},
   formula:"SIP value = P × [((1 + i)<sup>n</sup> − 1) ÷ i] × (1 + i), where i is the monthly rate and n is the number of months invested. Starting later leaves fewer months, so the corpus is smaller. Cost of waiting = corpus if you start now − corpus if you start later. The catch-up SIP is the monthly amount that reaches the same corpus in the shorter time."},
+ {id:"sip-vs-lumpsum",group:"Mutual funds",ic:"S/L",name:"SIP vs Lumpsum Calculator",lede:"Compare investing a sum all at once with spreading it as a monthly SIP.",
+  fields:[["a","Total amount to invest",600000,"₹"],["y","Years",5,"years"],["r","Expected return (p.a.)",12,"%"]],
+  calc:f=>{ const n=Math.round(f.y*12), i=f.r/1200, m=f.a/n, lump=f.a*Math.pow(1+f.r/100,f.y), sip=m*((Math.pow(1+i,n)-1)/i)*(1+i), d=lump-sip;
+    return {hero:[d>=0?"Lumpsum ends ahead by":"SIP ends ahead by",inr(Math.abs(d),0)],rows:[["Lumpsum value",inr(lump,0)],["SIP value",inr(sip,0)],["Monthly SIP for the same total",inr(m,0)],["Lumpsum gain",inr(lump-f.a,0),sign(lump-f.a)],["SIP gain",inr(sip-f.a,0),sign(sip-f.a)]],
+      note:"At the same steady return, a lumpsum always ends ahead because all the money is invested for longer. Real markets go up and down, and a SIP spreads your entry price and lowers the risk of investing just before a fall."}},
+  formula:"Lumpsum value = amount × (1 + r)<sup>years</sup>. SIP value = P × [((1 + i)<sup>n</sup> − 1) ÷ i] × (1 + i), where P = amount ÷ n, i is the monthly rate and n is the number of months. Both use the same constant return, so the comparison shows the effect of time invested, not of market timing."},
+ {id:"fire",group:"Mutual funds",ic:"FI",name:"FIRE Calculator",lede:"Find your financial independence number and how many years it may take to reach it.",
+  zeroOk:["s","m"],
+  fields:[["e","Yearly expenses today",600000,"₹"],["w","Safe withdrawal rate",4,"%"],["s","Current investments",1000000,"₹"],["m","Monthly investment",50000,"₹"],["r","Expected return (p.a.)",10,"%"],["inf","Inflation (p.a.)",6,"%"]],
+  calc:f=>{ const target=f.e/(f.w/100); if(f.s<=0&&f.m<=0) return {hero:["FIRE number (in today's money)",inr(target,0)],rows:[],note:"Add current investments or a monthly investment to see when you could get there."};
+    let c=f.s, k=0; const mr=f.r/1200, mi=Math.pow(1+f.inf/100,1/12); let t=target;
+    while(c<t && k<1200){ c=c*(1+mr)+f.m; t*=mi; k++; }
+    const ym=x=>{const y=Math.floor(x/12),mo=x%12;return `${y} ${y===1?"yr":"yrs"} ${mo} ${mo===1?"month":"months"}`};
+    return {hero:["FIRE number (in today's money)",inr(target,0)],rows:[["Time to reach it",k>=1200?"More than 100 years":ym(k),k<1200?"gain":"loss"],["Corpus needed then (after inflation)",k<1200?inr(t,0):"—"],["Your corpus then",k<1200?inr(c,0):"—"],["Multiple of yearly expenses",num(100/f.w,1)+"×"]],
+      note:f.r<=f.inf?"Your expected return is not above inflation, so the target grows as fast as your money.":null}},
+  formula:"FIRE number = yearly expenses ÷ safe withdrawal rate. A 4% rate means 25 times your yearly expenses. Each month, your investments grow at the expected return and you add the monthly investment, while the target grows with inflation. The time to reach FIRE is the first month your corpus catches up. The 4% rule comes from long-term US studies, and many Indian planners use a lower rate because inflation is higher."},
  {id:"emi",group:"Loans & growth",ic:"≡",name:"EMI Calculator",lede:"Find the monthly instalment and total interest on a loan.",
   fields:[["p","Loan amount",3000000,"₹"],["r","Interest rate (p.a.)",8.5,"%"],["y","Tenure",20,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12,e= i? f.p*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1) : f.p/n,tot=e*n;
@@ -234,6 +262,12 @@ const CALCS = [
     const i=f.r/1200, n=Math.round(f.y*12), loan=max*(1-Math.pow(1+i,-n))/i;
     return {hero:["Maximum loan",inr(loan,0)],rows:[["EMI you can take on",inr(max,0)],["Total interest on that loan",inr(max*n-loan,0),"loss"],["Total of all EMIs as a share of income",pct((max+f.emi)/f.inc*100)]]}},
   formula:"Lenders cap your total EMIs at a share of your income, called FOIR (fixed obligations to income ratio). EMI you can take on = income × FOIR − existing EMIs. Maximum loan = that EMI × (1 − (1 + i)<sup>−n</sup>) ÷ i, where i is the monthly rate and n is the number of months. Lenders also look at your credit score, age, job and the property's value, so the final offer can differ."},
+ {id:"real-return",group:"Loans & growth",ic:"RR",name:"Real Return Calculator",lede:"Find what an investment really earns after tax and inflation.",
+  zeroOk:["tax"],
+  fields:[["n","Return before tax (p.a.)",7,"%"],["inf","Inflation (p.a.)",6,"%"],["tax","Tax on the return (your slab)",30,"%"],["a","Amount invested",100000,"₹"],["y","Years",10,"years"]],
+  calc:f=>{ const at=f.n*(1-f.tax/100), real=((1+at/100)/(1+f.inf/100)-1)*100, realPre=((1+f.n/100)/(1+f.inf/100)-1)*100, fv=f.a*Math.pow(1+at/100,f.y), today=fv/Math.pow(1+f.inf/100,f.y);
+    return {hero:["Real return after tax and inflation",pct(real),sign(real)],rows:[["Return after tax",pct(at)],["Real return before tax",pct(realPre),sign(realPre)],[`Value after ${num(f.y,1)} years`,inr(fv,0)],["The same in today's money",inr(today,0),sign(today-f.a)],["Change in buying power",pct((today/f.a-1)*100),sign(today-f.a)]]}},
+  formula:"Return after tax = return × (1 − tax rate). Real return = (1 + after-tax return) ÷ (1 + inflation) − 1. It is the yearly growth in what your money can actually buy. Value in today's money = future value ÷ (1 + inflation)<sup>years</sup>. This assumes the return is taxed every year, as with FD interest. Investments taxed only when you sell will do a little better."},
  {id:"ssy",group:"Savings & salary",ic:"SS",name:"Sukanya Samriddhi Yojana Calculator",lede:"Estimate the tax-free maturity value of a Sukanya Samriddhi account for your daughter.",
   fields:[["d","Yearly deposit",150000,"₹"],["r","Interest rate (p.a.)",8.2,"%"],["age","Girl's age when the account is opened",5,"years"]],
   calc:f=>{ const dep=Math.min(f.d,150000); let b=0; for(let y=1;y<=21;y++){ if(y<=15) b+=dep; b*=1+f.r/100; } const inv=dep*15;
@@ -279,6 +313,17 @@ const CALCS = [
   calc:f=>{ const n=Math.round(f.y), rows=[]; let b=f.p; for(let k=1;k<=n;k++){ const yi=b*f.r/100; rows.push([`Interest in year ${k}`,inr(yi,0)]); b+=yi; }
     return {hero:["Maturity value",inr(b,0)],rows:[["Total interest",inr(b-f.p,0),"gain"],...rows],bar:[f.p,b-f.p],barLabels:["Investment","Interest"]}},
   formula:"Maturity = P × (1 + r)<sup>n</sup>. NSC interest is compounded every year but paid only at maturity, so each year's interest is added to the balance. The government reviews the rate every quarter. A certificate keeps the rate it was bought at, and the default is the rate at the time of writing."},
+ {id:"kvp",group:"Savings & salary",ic:"KV",name:"Kisan Vikas Patra Calculator",lede:"See how long a Kisan Vikas Patra takes to double your money.",
+  fields:[["p","Investment",100000,"₹"],["r","Interest rate (p.a.)",7.5,"%"]],
+  calc:f=>{ const mo=Math.round(12*Math.log(2)/Math.log(1+f.r/100)), y=Math.floor(mo/12), m=mo%12;
+    return {hero:["Time to double",`${mo} months`],rows:[["Which is",`${y} years ${m} months`],["Maturity value",inr(f.p*2,0)],["Interest earned",inr(f.p,0),"gain"]],bar:[f.p,f.p],barLabels:["Investment","Interest"]}},
+  formula:"KVP doubles your money over a fixed period that the government sets along with the rate. With yearly compounding, the time to double is ln 2 ÷ ln(1 + r) years. This gives the period the government announces at a given rate, such as 115 months at 7.5%. The default is the rate at the time of writing, so check the current rate and maturity period at the post office."},
+ {id:"pomis",group:"Savings & salary",ic:"MI",name:"Post Office Monthly Income Scheme Calculator",lede:"Find the monthly income from a Post Office Monthly Income Scheme deposit.",
+  fields:[["p","Deposit",900000,"₹"],["r","Interest rate (p.a.)",7.4,"%"],["y","Tenure",5,"years"]],
+  calc:f=>{ const mi=f.p*f.r/1200, tot=mi*12*f.y;
+    return {hero:["Monthly income",inr(mi,0),"gain"],rows:[["Yearly income",inr(mi*12,0),"gain"],["Total interest over the tenure",inr(tot,0),"gain"],["Principal returned at maturity",inr(f.p,0)],["Total received",inr(f.p+tot,0)]],bar:[f.p,tot],barLabels:["Deposit","Interest"],
+      note:f.p>1500000?"The scheme caps deposits, at ₹9 lakh for a single account and ₹15 lakh for a joint account at the time of writing. Check the current limits.":f.p>900000?"Above the single-account limit (₹9 lakh at the time of writing), you would need a joint account.":null}},
+  formula:"Monthly income = deposit × rate ÷ 12. The interest is paid out every month and does not compound, and the deposit is returned at the end of the 5-year tenure. The government reviews the rate every quarter, and the default is the rate at the time of writing. The rate stays fixed for the deposit's term."},
  {id:"percentage",group:"Everyday",ic:"%",name:"Percentage Calculator",lede:"Three common percentage questions, answered at once.",
   fields:[["a","Value A",25,""],["b","Value B",480,""]],
   calc:f=>{const ch=(f.b-f.a)/f.a*100;
@@ -293,7 +338,14 @@ const CALCS = [
   fields:[["p","Principal",100000,"₹"],["r","Interest rate (p.a.)",8,"%"],["t","Time",3,"years"]],
   calc:f=>{ const si=f.p*f.r*f.t/100, ci=f.p*Math.pow(1+f.r/100,f.t)-f.p;
     return {hero:["Simple interest",inr(si,0),"gain"],rows:[["Total amount",inr(f.p+si,0)],["Interest per year",inr(si/f.t,0)],["Interest per month",inr(si/f.t/12,0)],["Compound interest for comparison (yearly)",inr(ci,0)]],bar:[f.p,si],barLabels:["Principal","Interest"]}},
-  formula:"Simple interest = P × R × T ÷ 100, where P is the principal, R is the yearly rate and T is the time in years. The interest is the same every year because it is always worked out on the original principal. For time in months, divide by 12. For example, 18 months is 1.5 years."}
+  formula:"Simple interest = P × R × T ÷ 100, where P is the principal, R is the yearly rate and T is the time in years. The interest is the same every year because it is always worked out on the original principal. For time in months, divide by 12. For example, 18 months is 1.5 years."},
+ {id:"discount",group:"Everyday",ic:"DS",name:"Discount Calculator",lede:"Work out the sale price and your saving, including an extra discount on top.",
+  zeroOk:["d2"],
+  fields:[["p","Original price",2000,"₹"],["d1","Discount",20,"%"],["d2","Extra discount on the reduced price",10,"%"]],
+  calc:f=>{ if(f.d1>100||f.d2>100) return {hero:["Final price","—"],rows:[],note:"A discount cannot be more than 100%."};
+    const a=f.p*(1-f.d1/100), fin=a*(1-f.d2/100), eff=(1-fin/f.p)*100;
+    return {hero:["Final price",inr(fin)],rows:[["You save",inr(f.p-fin),"gain"],["Price after the first discount",inr(a)],["Effective total discount",pct(eff)],...(f.d2>0?[[`${num(f.d1)}% + ${num(f.d2)}% is not ${num(f.d1+f.d2)}%`,`it is ${pct(eff)}`]]:[])]}},
+  formula:"Sale price = price × (1 − discount ÷ 100). An extra discount applies to the already reduced price, so two discounts combine as 1 − (1 − d1)(1 − d2), which is always less than d1 + d2. For example, 20% off and then 10% off is 28% off in total, not 30%."}
 ];
 
 

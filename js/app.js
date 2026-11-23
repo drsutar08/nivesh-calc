@@ -118,6 +118,17 @@ const CALCS = [
     const r=f.h-f.l, lv=[23.6,38.2,50,61.8,78.6];
     return {hero:["Range (high − low)",inr(r)],rows:[...lv.map(x=>[`Uptrend ${x}% pullback`,inr(f.h-r*x/100)]),["Uptrend 127.2% extension",inr(f.l+r*1.272)],["Uptrend 161.8% extension",inr(f.l+r*1.618)],...lv.map(x=>[`Downtrend ${x}% bounce`,inr(f.l+r*x/100)]),["Downtrend 127.2% extension",inr(f.h-r*1.272)],["Downtrend 161.8% extension",inr(f.h-r*1.618)]]}},
   formula:"In an uptrend (the price rose from the low to the high), a retracement level = high − range × ratio. In a downtrend (the price fell from the high to the low), it is low + range × ratio, where range = high − low. The common ratios are 23.6%, 38.2%, 50%, 61.8% and 78.6%. Extensions project beyond the move at 127.2% and 161.8% of the range."},
+ {id:"stock-return",group:"Stocks",ic:"SR",name:"Stock Return Calculator",lede:"Find your total and annualised return on a stock, including the dividends you received.",
+  zeroOk:["div"],
+  fields:[["buy","Buy price",400,"₹"],["sell","Sell price or current price",560,"₹"],["div","Dividends received per share (total)",24,"₹"],["q","Quantity",100,"units"],["y","Years held",3,"years"]],
+  calc:f=>{ const cost=f.buy*f.q, pg=(f.sell-f.buy)*f.q, dv=f.div*f.q, tot=pg+dv, ann=(Math.pow((f.sell+f.div)/f.buy,1/f.y)-1)*100;
+    return {hero:["Total profit / loss",inr(tot,0),sign(tot)],rows:[["Price gain / loss",inr(pg,0),sign(pg)],["Dividends received",inr(dv,0),dv>0?"gain":""],["Total return",pct(tot/cost*100),sign(tot)],["Annualised return",pct(ann),sign(ann)],["Share of the return from dividends",tot>0?pct(dv/tot*100):"—"],["Amount invested",inr(cost,0)]]}},
+  formula:"Total return = (sell price − buy price + dividends per share) × quantity. Annualised return = ((sell price + dividends) ÷ buy price)<sup>1/years</sup> − 1. This treats dividends as cash received, not reinvested, and leaves out brokerage and tax."},
+ {id:"futures-pl",group:"Stocks",ic:"FU",name:"Futures Profit/Loss Calculator",lede:"See the profit or loss on a futures trade and the return on the margin you put up.",
+  fields:[["entry","Entry price",2400,"₹"],["exit","Exit price",2460,"₹"],["lot","Lot size",250,"units"],["lots","Number of lots",1,"lots"],["m","Margin required",15,"% of contract"]],
+  calc:f=>{ const q=f.lot*f.lots, pl=(f.exit-f.entry)*q, val=f.entry*q, mg=val*f.m/100;
+    return {hero:["Long (buy) profit / loss",inr(pl,0),sign(pl)],rows:[["Short (sell) profit / loss",inr(-pl,0),sign(-pl)],["Points moved",num(f.exit-f.entry,2),sign(pl)],["Profit / loss per point",inr(q,0)],["Contract value",inr(val,0)],["Approximate margin",inr(mg,0)],["Return on margin (long)",pct(pl/mg*100),sign(pl)],["Quantity",num(q,0)+" units"]]}},
+  formula:"Long profit = (exit price − entry price) × lot size × lots, and a short position gains the opposite. Contract value = entry price × quantity. Return on margin = profit ÷ (contract value × margin %). Exchanges set the margin and the lot size and change them over time. Brokerage, STT and other charges are not included."},
  {id:"sip",group:"Mutual funds",ic:"↻",name:"SIP Calculator",lede:"Estimate what a monthly investment grows to over time.",
   fields:[["p","Monthly investment",10000,"₹"],["r","Expected return (p.a.)",12,"%"],["y","Duration",15,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12, fv= i? f.p*((Math.pow(1+i,n)-1)/i)*(1+i) : f.p*n, inv=f.p*n;
@@ -196,6 +207,15 @@ const CALCS = [
     return {hero:["FIRE number (in today's money)",inr(target,0)],rows:[["Time to reach it",k>=1200?"More than 100 years":ym(k),k<1200?"gain":"loss"],["Corpus needed then (after inflation)",k<1200?inr(t,0):"—"],["Your corpus then",k<1200?inr(c,0):"—"],["Multiple of yearly expenses",num(100/f.w,1)+"×"]],
       note:f.r<=f.inf?"Your expected return is not above inflation, so the target grows as fast as your money.":null}},
   formula:"FIRE number = yearly expenses ÷ safe withdrawal rate. A 4% rate means 25 times your yearly expenses. Each month, your investments grow at the expected return and you add the monthly investment, while the target grows with inflation. The time to reach FIRE is the first month your corpus catches up. The 4% rule comes from long-term US studies, and many Indian planners use a lower rate because inflation is higher."},
+ {id:"stp",group:"Mutual funds",ic:"ST",name:"STP Calculator",lede:"See how a systematic transfer plan moves a lump sum from a liquid fund into equity over time.",
+  fields:[["a","Amount to invest",1200000,"₹"],["m","Transfer over",12,"months"],["lr","Liquid fund return (p.a.)",6.5,"%"],["er","Equity fund return (p.a.)",12,"%"],["y","Total time invested",5,"years"]],
+  calc:f=>{ const n=Math.round(f.y*12), m=Math.round(f.m); if(m>n) return {hero:["Value with STP","—"],rows:[],note:"The transfer period cannot be longer than the total time invested."};
+    const li=f.lr/1200, ei=f.er/1200, t=f.a/m; let liq=f.a, eq=0;
+    for(let k=0;k<n;k++){ if(k<m){ const x=Math.min(t,liq); liq-=x; eq+=x; } if(k===m){ eq+=liq; liq=0; } liq*=1+li; eq*=1+ei; }
+    const stp=liq+eq, lump=f.a*Math.pow(1+ei,n), liquid=f.a*Math.pow(1+li,n);
+    return {hero:["Value with STP",inr(stp,0)],rows:[["Monthly transfer",inr(t,0)],["Lump sum straight into equity",inr(lump,0)],["Left in the liquid fund",inr(liquid,0)],["STP vs lump sum in equity",inr(stp-lump,0),sign(stp-lump)],["Gain with STP",inr(stp-f.a,0),sign(stp-f.a)]],
+      note:"At steady returns, putting everything into equity at once ends higher, as with SIP vs lumpsum. An STP gives up a little of that to avoid investing the whole amount just before a fall."}},
+  formula:"The full amount starts in a liquid fund. Each month a fixed amount (total ÷ transfer months) moves to an equity fund, and any interest left in the liquid fund moves across at the end of the transfer period. Both funds grow monthly at their expected return. The result is compared with investing the full amount in equity on day one, and with leaving it all in the liquid fund."},
  {id:"emi",group:"Loans & growth",ic:"≡",name:"EMI Calculator",lede:"Find the monthly instalment and total interest on a loan.",
   fields:[["p","Loan amount",3000000,"₹"],["r","Interest rate (p.a.)",8.5,"%"],["y","Tenure",20,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12,e= i? f.p*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1) : f.p/n,tot=e*n;
@@ -268,6 +288,29 @@ const CALCS = [
   calc:f=>{ const at=f.n*(1-f.tax/100), real=((1+at/100)/(1+f.inf/100)-1)*100, realPre=((1+f.n/100)/(1+f.inf/100)-1)*100, fv=f.a*Math.pow(1+at/100,f.y), today=fv/Math.pow(1+f.inf/100,f.y);
     return {hero:["Real return after tax and inflation",pct(real),sign(real)],rows:[["Return after tax",pct(at)],["Real return before tax",pct(realPre),sign(realPre)],[`Value after ${num(f.y,1)} years`,inr(fv,0)],["The same in today's money",inr(today,0),sign(today-f.a)],["Change in buying power",pct((today/f.a-1)*100),sign(today-f.a)]]}},
   formula:"Return after tax = return × (1 − tax rate). Real return = (1 + after-tax return) ÷ (1 + inflation) − 1. It is the yearly growth in what your money can actually buy. Value in today's money = future value ÷ (1 + inflation)<sup>years</sup>. This assumes the return is taxed every year, as with FD interest. Investments taxed only when you sell will do a little better."},
+ {id:"balance-transfer",group:"Loans & growth",ic:"BT",name:"Home Loan Balance Transfer Calculator",lede:"Find out whether moving your home loan to a lower rate saves money after the fees.",
+  zeroOk:["fee"],
+  fields:[["p","Outstanding loan",4000000,"₹"],["r1","Current interest rate (p.a.)",9.25,"%"],["r2","New lender's rate (p.a.)",8.5,"%"],["y","Remaining tenure",18,"years"],["fee","Switching costs (fees, charges)",25000,"₹"]],
+  calc:f=>{ const n=Math.round(f.y*12), emi=r=>{const i=r/1200; return f.p*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1)}, e1=emi(f.r1), e2=emi(f.r2), i1=e1*n-f.p, i2=e2*n-f.p, net=i1-i2-f.fee, ms=e1-e2;
+    return {hero:["Net saving after switching costs",inr(net,0),sign(net)],rows:[["Current EMI",inr(e1,0)],["New EMI",inr(e2,0)],["EMI saving every month",inr(ms,0),sign(ms)],["Interest at the current rate",inr(i1,0)],["Interest at the new rate",inr(i2,0)],["Switching costs",inr(f.fee,0),f.fee>0?"loss":""],["Months to recover the costs",ms>0?num(Math.ceil(f.fee/ms),0):"—"]],
+      note:f.r2>=f.r1?"The new rate is not lower than your current rate, so switching does not save interest.":null}},
+  formula:"EMI = P × i × (1 + i)<sup>n</sup> ÷ ((1 + i)<sup>n</sup> − 1) at each rate, over the same remaining tenure. Interest saved = interest at the current rate − interest at the new rate. Net saving = interest saved − switching costs. Months to recover = switching costs ÷ monthly EMI saving. Ask your current lender for a lower rate first, because many will match an offer."},
+ {id:"credit-card-interest",group:"Loans & growth",ic:"CC",name:"Credit Card Interest Calculator",lede:"See how long paying only the minimum due takes to clear a credit card balance, and what it costs.",
+  zeroOk:["gst","pay"],
+  fields:[["b","Outstanding balance",50000,"₹"],["mr","Interest rate per month",3.5,"%"],["gst","GST on interest",18,"%"],["mp","Minimum due",5,"% of balance"],["floor","Smallest minimum due",200,"₹"],["pay","Your fixed monthly payment (0 = minimum only)",0,"₹"]],
+  calc:f=>{ let bal=f.b, k=0, int=0, first=0;
+    while(bal>0.5 && k<600){ const c=bal*f.mr/100*(1+f.gst/100); if(k===0) first=c; int+=c; bal+=c; const p=Math.min(bal,Math.max(bal*f.mp/100,f.floor,f.pay)); if(p<=c){ k=600; break; } bal-=p; k++; }
+    const ym=x=>{const y=Math.floor(x/12),mo=x%12;return `${y} ${y===1?"yr":"yrs"} ${mo} ${mo===1?"month":"months"}`};
+    return {hero:["Time to clear the balance",k>=600?"More than 50 years":ym(k),"loss"],rows:[["Total interest and GST",k>=600?"—":inr(int,0),"loss"],["Total you pay",k>=600?"—":inr(f.b+int,0)],["Interest and GST in the first month",inr(first,0),"loss"],["Yearly interest rate",pct((Math.pow(1+f.mr/100,12)-1)*100),"loss"]],
+      note:k>=600?"At this payment the balance barely shrinks. Pay more each month or move the balance to a cheaper loan.":"Paying the full bill by the due date avoids interest altogether."}},
+  formula:"Each month, interest = balance × monthly rate, plus GST on that interest. You then pay the larger of the minimum due (a percentage of the balance, but at least the smallest minimum) and your fixed payment. This repeats until the balance is cleared. Most cards also stop the interest-free period on new purchases while a balance is carried, which this calculator does not include."},
+ {id:"loan-interest-rate",group:"Loans & growth",ic:"IR",name:"Loan Interest Rate Calculator",lede:"Find the real interest rate on a loan from the amount, the EMI and the tenure.",
+  fields:[["p","Loan amount",1000000,"₹"],["emi","Monthly EMI",21247,"₹"],["y","Tenure",5,"years"]],
+  calc:f=>{ const n=Math.round(f.y*12); if(f.emi*n<=f.p) return {hero:["Interest rate (p.a.)","—"],rows:[],note:"The EMIs add up to no more than the loan, so there is no interest. Check the amounts."};
+    const pv=i=>f.emi*(1-Math.pow(1+i,-n))/i; let lo=1e-9, hi=1; for(let k=0;k<200;k++){const m=(lo+hi)/2; if(pv(m)>f.p) lo=m; else hi=m;}
+    const i=(lo+hi)/2, r=i*1200, tot=f.emi*n;
+    return {hero:["Interest rate (p.a.)",pct(r)],rows:[["Total interest",inr(tot-f.p,0),"loss"],["Total payable",inr(tot,0)],["Effective annual rate",pct((Math.pow(1+i,12)-1)*100)],["Number of EMIs",num(n,0)]]}},
+  formula:"The rate is the monthly rate i that solves loan = EMI × (1 − (1 + i)<sup>−n</sup>) ÷ i, where n is the number of monthly EMIs. The yearly rate is i × 12, which is how lenders quote reducing-balance rates. The effective annual rate, (1 + i)<sup>12</sup> − 1, shows the cost with monthly compounding. Processing fees are not included, and they raise the real cost further."},
  {id:"ssy",group:"Savings & salary",ic:"SS",name:"Sukanya Samriddhi Yojana Calculator",lede:"Estimate the tax-free maturity value of a Sukanya Samriddhi account for your daughter.",
   fields:[["d","Yearly deposit",150000,"₹"],["r","Interest rate (p.a.)",8.2,"%"],["age","Girl's age when the account is opened",5,"years"]],
   calc:f=>{ const dep=Math.min(f.d,150000); let b=0; for(let y=1;y<=21;y++){ if(y<=15) b+=dep; b*=1+f.r/100; } const inv=dep*15;
@@ -345,7 +388,21 @@ const CALCS = [
   calc:f=>{ if(f.d1>100||f.d2>100) return {hero:["Final price","—"],rows:[],note:"A discount cannot be more than 100%."};
     const a=f.p*(1-f.d1/100), fin=a*(1-f.d2/100), eff=(1-fin/f.p)*100;
     return {hero:["Final price",inr(fin)],rows:[["You save",inr(f.p-fin),"gain"],["Price after the first discount",inr(a)],["Effective total discount",pct(eff)],...(f.d2>0?[[`${num(f.d1)}% + ${num(f.d2)}% is not ${num(f.d1+f.d2)}%`,`it is ${pct(eff)}`]]:[])]}},
-  formula:"Sale price = price × (1 − discount ÷ 100). An extra discount applies to the already reduced price, so two discounts combine as 1 − (1 − d1)(1 − d2), which is always less than d1 + d2. For example, 20% off and then 10% off is 28% off in total, not 30%."}
+  formula:"Sale price = price × (1 − discount ÷ 100). An extra discount applies to the already reduced price, so two discounts combine as 1 − (1 − d1)(1 − d2), which is always less than d1 + d2. For example, 20% off and then 10% off is 28% off in total, not 30%."},
+ {id:"term-insurance",group:"Everyday",ic:"TI",name:"Term Insurance Calculator",lede:"Estimate how much life cover your family needs if you were not there.",
+  zeroOk:["loans","goals","assets","cover"],
+  fields:[["exp","Family's yearly expenses",600000,"₹"],["yrs","Years the family needs support",25,"years"],["inf","Inflation (p.a.)",6,"%"],["ret","Return on the payout once invested (p.a.)",7,"%"],["loans","Outstanding loans",2000000,"₹"],["goals","Future goals to fund (education, marriage)",3000000,"₹"],["assets","Savings and investments",1500000,"₹"],["cover","Existing life cover",0,"₹"]],
+  calc:f=>{ const n=Math.round(f.yrs), q=(1+f.inf/100)/(1+f.ret/100); let pv=0; for(let k=0;k<n;k++) pv+=f.exp*Math.pow(q,k);
+    const need=Math.max(0,pv+f.loans+f.goals-f.assets-f.cover);
+    return {hero:["Life cover you need",inr(need,0)],rows:[["Cost of replacing household expenses",inr(pv,0)],["Plus outstanding loans",inr(f.loans,0)],["Plus future goals",inr(f.goals,0)],["Minus savings and investments",inr(f.assets,0)],["Minus existing life cover",inr(f.cover,0)],["Cover as a multiple of yearly expenses",num(need/f.exp,1)+"×"]]}},
+  formula:"Expense cover = the amount that, invested at the return you enter, pays the family's expenses for the years you enter, with expenses rising each year by inflation. Cover needed = expense cover + outstanding loans + future goals − savings and investments − existing life cover. This is a needs-based estimate, and it is worth reviewing when your income, loans or family change."},
+ {id:"emergency-fund",group:"Everyday",ic:"EF",name:"Emergency Fund Calculator",lede:"Work out how big your emergency fund should be and how long it will take to build.",
+  zeroOk:["emi","saved","save"],
+  fields:[["exp","Essential monthly expenses",40000,"₹"],["emi","Monthly EMIs and insurance premiums",15000,"₹"],["months","Months of cover",6,"months"],["saved","Already set aside",100000,"₹"],["save","You can add every month",10000,"₹"]],
+  calc:f=>{ const out=f.exp+f.emi, target=out*f.months, gap=Math.max(0,target-f.saved), mo=gap&&f.save>0?Math.ceil(gap/f.save):0;
+    return {hero:["Emergency fund target",inr(target,0)],rows:[["Monthly outgoings covered",inr(out,0)],["Already set aside",inr(f.saved,0)],["Still needed",inr(gap,0),gap>0?"loss":"gain"],["Time to build it",gap===0?"Already complete":f.save>0?`${mo} ${mo===1?"month":"months"}`:"—"],["Months covered today",num(f.saved/out,1)]],
+      note:gap>0&&f.save<=0?"Add a monthly amount to see how long it will take to reach the target.":null}},
+  formula:"Emergency fund target = (essential monthly expenses + EMIs and premiums) × months of cover. Still needed = target − amount already set aside. Time to build it = still needed ÷ monthly saving, rounded up. Many planners suggest 3 to 6 months, or more if your income is irregular or one person earns for the whole family."}
 ];
 
 

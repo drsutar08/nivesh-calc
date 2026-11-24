@@ -128,11 +128,14 @@ const CAT_BLURB = { "Stocks": "Averages, returns and losses, corporate actions, 
 const catKey = name => CAT_KEY[name] || "stocks";
 // The category blocks with a pill link to every calculator (homepage and 404 page).
 const bento = () => { const cats = groups.filter(g => g.items.some(x => x.calc || x.lots)); return `<section class="hb-bento" id="calculators" aria-label="All calculators">${cats.map(g => { const k = catKey(g.name); return `<div class="hb-blk hb-${k} t-${k}" id="cat-${slugOf(g.name)}"><div class="hb-head"><div><h2>${esc(g.name)} calculators</h2><p>${esc(CAT_BLURB[g.name] || "")}</p></div><span class="hb-n" aria-hidden="true">${String(g.items.length).padStart(2, "0")}</span></div>
-  <ul class="hb-pills">${g.items.map(c => `<li><a class="hb-pill" href="${pathOf(c)}" title="${esc(c.lede)}"><i aria-hidden="true">${esc(c.ic)}</i>${esc(shortName(c))}</a></li>`).join("")}</ul></div>`; }).join("")}</section>`; };
+  <ul class="hb-pills" id="pills-${k}">${g.items.map((c, i) => `<li${i >= PILLS_SHOWN ? ' class="hb-extra"' : ""}><a class="hb-pill" href="${pathOf(c)}" title="${esc(c.lede)}"><i aria-hidden="true">${esc(c.ic)}</i>${esc(shortName(c))}</a></li>`).join("")}</ul>${g.items.length > PILLS_SHOWN ? `<button type="button" class="hb-toggle" aria-expanded="false" aria-controls="pills-${k}" data-n="${g.items.length}">Show all ${g.items.length}</button>` : ""}</div>`; }).join("")}</section>`; };
+// On phones each block shows its first PILLS_SHOWN calculators and a "Show all" button (see .hb-toggle in css and app.js).
+// Every link stays in the HTML, and without JavaScript all of them show.
+const PILLS_SHOWN = 8;
 function home() {
   const cats = groups.filter(g => g.items.some(x => x.calc || x.lots));
   const latest = [...guides].sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 6);
-  const mostUsed = ["average", "sip", "brokerage", "emi", "capital-gains"].map(id => CALCS.find(c => c.id === id)).filter(Boolean);
+  const mostUsed = ["average", "income-tax", "sip", "brokerage", "emi", "capital-gains"].map(id => CALCS.find(c => c.id === id)).filter(Boolean);
   const guideCat = g => { const c = CALCS.find(x => x.id === g.calcs[0]); return c ? c.group : "Stocks"; };
   const nCalc = CALCS.length;
   const html = `<div class="hb">

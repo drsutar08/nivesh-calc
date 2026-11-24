@@ -982,3 +982,11 @@ $("#q").addEventListener("keydown",e=>{
   if(e.key==="Escape"){ $("#q").value=""; $("#q").dispatchEvent(new Event("input")); $("#q").blur(); return; }
   if(e.key==="Enter"){ const a=[...document.querySelectorAll("#nav a")].find(x=>!x.hidden); if(a){location.href=a.href.endsWith("/")&&location.protocol==="file:"?a.href+"index.html":a.href;} }
 });
+
+// homepage and 404 page: "Show all" buttons on the calculator blocks (phones only, via CSS)
+document.querySelectorAll(".hb-toggle").forEach(b=>b.addEventListener("click",()=>{
+  const blk=b.closest(".hb-blk"), open=blk.classList.toggle("open");
+  b.setAttribute("aria-expanded",open);
+  b.textContent=open?"Show fewer":"Show all "+b.dataset.n;
+  if(!open) blk.scrollIntoView({block:"nearest"});
+}));

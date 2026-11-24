@@ -25,6 +25,12 @@ module.exports = {
     ]
   },
   "ltcg-harvest": {
+    reviewed: "2026-11-25",
+    checked: "the 12.5% long-term rate and the ₹1.25 lakh yearly exemption for listed equity",
+    sources: [
+      ["CBDT FAQs on the capital gains tax changes (Press Information Bureau)","https://www.pib.gov.in/PressReleasePage.aspx?PRID=2036604"],
+      ["Section 112A: tax on long-term capital gains on listed equity (Income Tax Department)","https://wm.incometaxindia.gov.in/w/section-112a-59"]
+    ],
     heading: "What LTCG tax harvesting is and how it works",
     intro: [
       "Long-term capital gains on listed shares and equity funds are tax-free up to a yearly exemption limit. Tax harvesting means selling some long-term holdings each financial year to book gains up to that limit, then buying them back. The tax on the booked gain is nil, and your purchase cost resets to the higher buy-back price, so less gain is left to be taxed when you finally sell.",

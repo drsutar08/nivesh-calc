@@ -104,6 +104,11 @@ module.exports = {
     ]
   },
   hra: {
+    reviewed: "2026-11-25",
+    checked: "the three-limit rule for the HRA exemption, using 50% of salary in Mumbai, Kolkata, Delhi or Chennai and 40% elsewhere",
+    sources: [
+      ["Tax-free incomes, including house rent allowance (Income Tax Department)","https://wm.incometaxindia.gov.in/w/tax-free-incomes"]
+    ],
     heading: "How the HRA exemption is worked out",
     intro: [
       "If your salary includes a house rent allowance and you pay rent, part of the HRA can be tax-free under the old tax regime. The exemption is the smallest of three amounts: the HRA you actually received, the rent you paid minus 10% of your basic salary, and 50% of basic salary if you live in Delhi, Mumbai, Kolkata or Chennai, or 40% elsewhere.",

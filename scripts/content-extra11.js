@@ -1,6 +1,12 @@
 // Explainer text for the twelfth batch of calculators. Same rules as content.js: factual, and no figures that change (tax rates, limits, scheme rates).
 module.exports = {
   "sell-or-wait": {
+    reviewed: "2026-11-25",
+    checked: "the 20% short-term rate, the 12.5% long-term rate and the ₹1.25 lakh exemption for listed equity",
+    sources: [
+      ["CBDT FAQs on the capital gains tax changes (Press Information Bureau)","https://www.pib.gov.in/PressReleasePage.aspx?PRID=2036604"],
+      ["Section 112A: tax on long-term capital gains on listed equity (Income Tax Department)","https://wm.incometaxindia.gov.in/w/section-112a-59"]
+    ],
     heading: "Should you sell now or wait for long-term tax?",
     intro: [
       "Gains on listed shares held for 12 months or less are taxed as short-term gains, at a higher rate. Held longer, they become long-term gains, taxed at a lower rate after a yearly exemption. If you are close to the 12-month mark, waiting can save a good amount of tax, but the share price can move in the meantime.",

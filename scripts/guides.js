@@ -1,6 +1,94 @@
 // Long-form guides, rendered by build.js into /guides/<slug>/. Same rules as content.js:
-// factual, plain language, and no figures that change (tax rates, slabs, charges). Worked examples use round, stated assumptions.
+// factual, plain language, and no figures that change (tax rates, slabs, charges), unless the guide is about a specific year's rules:
+// then the year is in its title, and it has "reviewed" (YYYY-MM-DD) and "sources" ([label, url] pairs) like a reviewed calculator.
+// Worked examples use round, stated assumptions.
 module.exports = [
+  {
+    "slug": "old-vs-new-tax-regime-2026-27",
+    "title": "Old vs New Tax Regime for FY 2026-27: Which One Saves You More?",
+    "desc": "The FY 2026-27 slabs for both regimes, what each costs at ₹10 lakh to ₹25 lakh of salary, and how much in deductions the old regime needs to come out ahead.",
+    "calcs": [
+      "income-tax",
+      "hra",
+      "nps",
+      "ppf"
+    ],
+    "updated": "2026-11-25",
+    "reviewed": "2026-11-25",
+    "sources": [
+      [
+        "Computation of tax for individuals (Income Tax Department)",
+        "https://wm.incometaxindia.gov.in/w/computation-of-tax-for-individual-1"
+      ],
+      [
+        "Rebate under section 87A (Income Tax Department)",
+        "https://wm.incometaxindia.gov.in/w/what-is-rebate-under-section-87a-for-f.y-2025-26-and-who-can-claim-it-"
+      ],
+      [
+        "No income tax on income up to ₹12 lakh under the new regime (Press Information Bureau)",
+        "https://www.pib.gov.in/PressReleaseIframePage.aspx?PRID=2098406"
+      ]
+    ],
+    "sections": [
+      {
+        "h": "The two regimes in brief",
+        "p": [
+          "Every individual in India can choose how their income tax is worked out. The new regime is the default. It has lower slab rates and a large rebate, but it allows almost no deductions. The old regime has higher rates, but it lets you subtract deductions such as 80C investments, health insurance, HRA and home loan interest before tax is worked out.",
+          "So the question is simple: are your deductions large enough to make up for the old regime's higher rates? For most salaried people today, they are not. This guide shows where the line falls, using the rates for FY 2026-27 (assessment year 2027-28)."
+        ]
+      },
+      {
+        "h": "New regime rates for FY 2026-27",
+        "p": [
+          "Income up to ₹4 lakh is not taxed. The rate is 5% from ₹4 lakh to ₹8 lakh, 10% up to ₹12 lakh, 15% up to ₹16 lakh, 20% up to ₹20 lakh, 25% up to ₹24 lakh and 30% above ₹24 lakh.",
+          "Salaried people and pensioners get a standard deduction of ₹75,000. A rebate then makes the tax nil if your taxable income is ₹12 lakh or less, which means a salary of up to ₹12.75 lakh pays no income tax at all. Just above ₹12 lakh of taxable income, marginal relief stops your tax from being more than the amount by which your income crosses ₹12 lakh."
+        ]
+      },
+      {
+        "h": "Old regime rates for FY 2026-27",
+        "p": [
+          "Income up to ₹2.5 lakh is not taxed, or ₹3 lakh from age 60 and ₹5 lakh from age 80. The rate is 5% up to ₹5 lakh, 20% up to ₹10 lakh and 30% above ₹10 lakh.",
+          "Salaried people get a standard deduction of ₹50,000, and a rebate makes the tax nil if taxable income is ₹5 lakh or less. The main deductions are up to ₹1.5 lakh under 80C (EPF, PPF, ELSS, life insurance and more), health insurance under 80D, HRA if you pay rent, up to ₹2 lakh of interest on a home loan for a home you live in, and up to ₹50,000 of extra NPS contributions. In both regimes, 4% health and education cess is added to the tax."
+        ]
+      },
+      {
+        "h": "What each regime costs at different salaries",
+        "p": [
+          "These figures assume a salaried person under 60, with 80C investments of ₹1.5 lakh and health insurance of ₹25,000 in the old regime, and include cess.",
+          "On a salary of ₹10 lakh, the new regime costs nothing, while the old regime costs about ₹70,200. On ₹15 lakh, the new regime costs about ₹97,500 and the old regime about ₹2,02,800. On ₹20 lakh, the new regime costs about ₹1,92,400 and the old regime about ₹3,58,800. On ₹25 lakh, the new regime costs about ₹3,19,800 and the old regime about ₹5,14,800.",
+          "In every one of these cases, the new regime is cheaper by ₹70,000 to nearly ₹2 lakh a year."
+        ]
+      },
+      {
+        "h": "How much in deductions the old regime needs",
+        "p": [
+          "The old regime only wins if your total deductions, on top of the standard deduction, are larger than a break-even amount. At a salary of ₹15 lakh, that is about ₹5.4 lakh. At ₹20 lakh it is about ₹7.1 lakh, and at ₹25 lakh or more it is about ₹8 lakh.",
+          "Reaching those amounts usually takes a large HRA exemption and home loan interest on top of full 80C, 80D and NPS. For example, on a salary of ₹15 lakh with ₹1.5 lakh under 80C, ₹25,000 under 80D, an HRA exemption of ₹2.4 lakh, ₹2 lakh of home loan interest and ₹50,000 of extra NPS, ₹6.65 lakh in all, the old regime costs about ₹72,300 against ₹97,500 in the new regime. It saves about ₹25,200. But the same deductions on a salary of ₹20 lakh fall short of the ₹7.1 lakh break-even, and the new regime stays cheaper by about ₹13,500."
+        ]
+      },
+      {
+        "h": "How to decide for your own salary",
+        "p": [
+          "Add up only the deductions you will actually claim this year, not the ones you could claim. Compare the total with the break-even amount for your salary. If you are below it, the new regime is cheaper. If you are well above it, the old regime may save you money.",
+          "The Income Tax Calculator does this comparison for you. It shows the tax under both regimes and, when the new regime is cheaper, how much more you would need to deduct for the old regime to match."
+        ]
+      }
+    ],
+    "faq": [
+      [
+        "Can I switch between the regimes every year?",
+        "If you have no business income, you can choose either regime each year when you file your return, whatever you told your employer earlier. People with business income have much more limited options to switch, so check the rules before choosing."
+      ],
+      [
+        "Is income up to ₹12 lakh really tax-free under the new regime?",
+        "Yes, for ordinary income such as salary and interest. The rebate makes the tax nil on taxable income up to ₹12 lakh, which is a salary of up to ₹12.75 lakh after the standard deduction. The rebate does not apply to income taxed at special rates, such as capital gains on shares."
+      ],
+      [
+        "Which deductions can I still claim in the new regime?",
+        "Very few. Salaried people get the ₹75,000 standard deduction, and the employer's contribution to your NPS account is also allowed. Most others, including 80C, 80D, HRA and home loan interest on a home you live in, are not."
+      ]
+    ]
+  },
   {
     slug: "how-is-sip-return-calculated",
     title: "How Is SIP Return Calculated? Formula and Worked Example",

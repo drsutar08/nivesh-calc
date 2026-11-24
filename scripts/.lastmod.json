@@ -129,7 +129,7 @@
  },
  "guides-index": {
   "d": "2026-11-24",
-  "s": "93b826898d9cf041db74963d521b7237"
+  "s": "57337cfa0a5d2b147b6364ba6aec92c1"
  },
  "guide:what-is-cagr-and-how-to-calculate-it": {
   "d": "2026-11-24",
@@ -145,7 +145,7 @@
  },
  "home": {
   "d": "2026-11-24",
-  "s": "5cbba290ca3f44bab8f98bbc3ef84b69"
+  "s": "d773e51fae681fe76b313620b31ed4ac"
  },
  "target-average": {
   "d": "2026-11-24",
@@ -157,7 +157,7 @@
  },
  "ltcg-harvest": {
   "d": "2026-11-24",
-  "s": "1eb08ac89c20e1352b1caa75903d1df4"
+  "s": "2b562a58d87b896910accc3b8ef62a72"
  },
  "xirr": {
   "d": "2026-11-24",
@@ -209,7 +209,7 @@
  },
  "hra": {
   "d": "2026-11-24",
-  "s": "57b1b6548e11e6078aa13da4307dfcb1"
+  "s": "44d51cee219968a101367566e4fd8a4e"
  },
  "pivot-points": {
   "d": "2026-11-24",
@@ -217,7 +217,7 @@
  },
  "ipo-listing": {
   "d": "2026-11-24",
-  "s": "9ac1b10b817ef701eee44a77bee9daf3"
+  "s": "8cc5b30e2b11670e71b87342892dc6d1"
  },
  "mtf": {
   "d": "2026-11-24",
@@ -393,7 +393,7 @@
  },
  "leave-encashment": {
   "d": "2026-11-24",
-  "s": "c9bc7863e995bb6ee1a6766c8dcaaf3f"
+  "s": "72b8e2682858861998dfe8929be40869"
  },
  "gold-price": {
   "d": "2026-11-24",
@@ -469,7 +469,7 @@
  },
  "sell-or-wait": {
   "d": "2026-11-24",
-  "s": "b2c4c977867ce3a440734fbd033322ee"
+  "s": "da6f94a1afb5a90741b799fb134a09c8"
  },
  "required-return": {
   "d": "2026-11-24",
@@ -502,5 +502,9 @@
  "income-tax": {
   "d": "2026-11-24",
   "s": "14d798cd1133c125c6b4b1eda6a10e34"
+ },
+ "guide:old-vs-new-tax-regime-2026-27": {
+  "s": "14f4fbb737b58c0fcb34d30320286856",
+  "d": "2026-11-24"
  }
 }

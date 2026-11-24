@@ -40,7 +40,7 @@ On Windows PowerShell: `$env:SITE_URL="https://your-domain.com/"; node scripts/b
 `npm run build` builds the site and then pings IndexNow with every sitemap URL whose own content changed since the last ping: its text, inputs, formula, calculation or example result. Shared CSS/JS, navigation and ad changes do not count, so a site-wide style change sends nothing. The build writes each page's signature to `scripts/.pagesigs.json`, and `scripts/.indexnow.json` remembers what was sent, so keep both. `npm run indexnow:all` resubmits every URL. Set `INDEXNOW=0` to skip the ping. The key file `d1bf13db99098b943c0329a8b93a73b2.txt` must stay at the site root.
 
 ## Guides, analytics and images
-- Long-form guides live in `scripts/guides.js` and are built to `guides/<slug>/`. Add an object there and rebuild. Keep them free of figures that change (tax rates, charges).
+- Long-form guides live in `scripts/guides.js` and are built to `guides/<slug>/`. Add an object there and rebuild. Keep them free of figures that change (tax rates, charges), unless the guide is about one year's rules: then put the year in the title and give it `reviewed` and `sources`, like a reviewed calculator.
 - Analytics: set `CF_BEACON=<Cloudflare Web Analytics token>` (or `GA_ID=G-XXXX`) when you build. Without either, no analytics script is added.
 - `images/og-image.png` (1200×630) is the social preview; `images/icon-*.png` and `site.webmanifest` are the app icons.
 - `scripts/.lastmod.json` remembers when each page last changed, so `sitemap.xml` only updates `lastmod` for pages that really changed. Keep this file.

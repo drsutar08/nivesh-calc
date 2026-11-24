@@ -13,6 +13,11 @@ module.exports = {
     ]
   },
   "ipo-listing": {
+    reviewed: "2026-11-25",
+    checked: "the 20% short-term capital gains rate for listed equity",
+    sources: [
+      ["CBDT FAQs on the capital gains tax changes (Press Information Bureau)","https://www.pib.gov.in/PressReleasePage.aspx?PRID=2036604"]
+    ],
     heading: "How IPO listing gains work",
     intro: [
       "When you apply for an IPO, the application amount is blocked in your bank account through ASBA or UPI rather than debited. If you get an allotment, the shares are credited before the listing date. On listing day the shares start trading, and the listing gain is the difference between the listing price and the issue price.",

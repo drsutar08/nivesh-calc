@@ -61,6 +61,11 @@ module.exports = {
     ]
   },
   "leave-encashment": {
+    reviewed: "2026-11-25",
+    checked: "the ₹25 lakh tax-free limit for non-government employees",
+    sources: [
+      ["Tax exemption limit on leave encashment raised to ₹25 lakh (Press Information Bureau)","https://www.pib.gov.in/PressReleasePage.aspx?PRID=1927265"]
+    ],
     heading: "How leave encashment is calculated and taxed",
     intro: [
       "Leave encashment is the payment you receive for unused paid leave, either when you leave a job or retire, or in some companies while still employed. It is usually worked out on your basic pay plus dearness allowance for each day of leave.",

@@ -13,6 +13,7 @@ module.exports = {
     ]
   },
   "futures-pl": {
+    riskNote: ["SEBI's studies of individual traders in equity futures and options have repeatedly found that about 9 in 10 of them make a net loss. This calculator only shows the arithmetic of a trade. It is not a recommendation to trade.", "https://www.sebi.gov.in/sebi_data/attachdocs/aug-2026/1787236407005.pdf"],
     heading: "How profit and loss work on a futures trade",
     intro: [
       "A futures contract lets you buy or sell a fixed quantity, one lot, at today's price for settlement later. Your profit or loss is the price move multiplied by the quantity. A long position gains when the price rises, and a short position gains when it falls.",

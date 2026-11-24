@@ -32,7 +32,10 @@ const adUnit = (kind) => {
 // Load the calculator definitions straight from js/app.js (everything before the UI code).
 const src = fs.readFileSync(path.join(root, "js/app.js"), "utf8");
 const head = src.slice(0, src.indexOf("/* ==== UI: everything below needs a browser ==== */"));
-const { CALCS, PAGES, pathOf, slugOf, fieldsHTML, lotsHTML, resultFor, resultHTML } = new Function(head + "; return {CALCS,PAGES,pathOf,slugOf,fieldsHTML,lotsHTML,resultFor,resultHTML};")();
+const { CALCS: ALL_CALCS, PAGES, pathOf, slugOf, fieldsHTML, lotsHTML, resultFor, resultHTML } = new Function(head + "; return {CALCS,PAGES,pathOf,slugOf,fieldsHTML,lotsHTML,resultFor,resultHTML};")();
+// Calculators marked hidden:true in js/app.js are kept in the code but not built, linked or listed in the sitemap.
+// Their old address is redirected in _redirects.
+const CALCS = ALL_CALCS.filter(c => !c.hidden);
 // Pre-render a calculator's inputs and its example result, exactly as js/app.js draws them on load.
 const prerender = c => { try { const vals = c.lots ? c.lots.map(l => [...l]) : Object.fromEntries(c.fields.map(x => [x[0], parseFloat(x[2])]));
   return { fields: c.lots ? lotsHTML(vals) : fieldsHTML(c, {}), result: resultHTML(resultFor(c, vals)) }; } catch (e) { console.warn("pre-render failed for " + c.id + ": " + e.message); return { fields: "", result: "" }; } };
@@ -89,6 +92,10 @@ function trust(c) {
   return `<h2 style="margin-top:16px" id="sources">Sources and review</h2><p>This calculator was last reviewed on <time datetime="${g.reviewed}">${longDate(g.reviewed)}</time> by <a href="${AUTHOR.path}">${esc(AUTHOR.name)}</a>, who checked ${esc(g.checked || "its rates and rules")} against the official sources below. Rules can change, so check the latest official guidance before you act.</p>` +
     (src.length ? `<ul class="ticks sources">${src.map(([l, u]) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a></li>`).join("")}</ul>` : "");
 }
+
+// A risk notice shown straight after a calculator, from its content entry: riskNote: [text, official source URL].
+const notice = c => { const g = content[c.id]; if (!g || !g.riskNote) return ""; const [txt, url] = g.riskNote;
+  return `<div class="risk-note" role="note"><p><b>Risk warning.</b> ${esc(txt)}${/^https:\/\//.test(url || "") ? ` <a href="${esc(url)}" target="_blank" rel="noopener">Read SEBI's study</a>.` : ""}</p></div>`; };
 
 function guide(c) {
   const g = content[c.id]; if (!g) return "";
@@ -148,7 +155,7 @@ function seo(c, isCalc) {
 
 // Homepage ("colour blocks" design): intro panel, stat tiles, most-used list, one gradient block per category, latest guides.
 const CAT_KEY = { "Stocks": "stocks", "Mutual funds": "funds", "Loans & growth": "growth", "Savings & salary": "savings", "Everyday": "everyday" };
-const CAT_BLURB = { "Stocks": "Averages, returns and losses, corporate actions, IPOs, futures and options, valuation and ratios, trading levels and expectancy, charges and tax.", "Mutual funds": "Plan SIPs, lumpsums, STPs and withdrawals, check returns, units and exit loads, and plan goals from education to FIRE.", "Loans & growth": "EMIs, loan rates and tenure, affordability, prepay or invest, foreclosure, debt payoff, credit cards, FDs, bonds, rent vs buy and rental yield.", "Savings & salary": "Income tax, government schemes (PPF, Sukanya Samriddhi, NPS, SCSS, NSC, KVP, POMIS, gold bonds) and salary (EPF, EPS, gratuity, HRA, leave, hikes).", "Everyday": "Everyday money: GST, discounts, no-cost EMIs, unit prices, gold, EV vs petrol, policy returns, net worth, credit health and life cover." };
+const CAT_BLURB = { "Stocks": "Averages, returns and losses, corporate actions, IPOs, futures and options, valuation and ratios, trading levels and expectancy, charges and tax.", "Mutual funds": "Plan SIPs, lumpsums, STPs and withdrawals, check returns, units and exit loads, and plan goals from education to FIRE.", "Loans & growth": "EMIs, loan rates and tenure, affordability, prepay or invest, foreclosure, debt payoff, credit cards, FDs, bonds, rent vs buy and rental yield.", "Savings & salary": "Income tax, government schemes (PPF, Sukanya Samriddhi, NPS, SCSS, NSC, KVP, POMIS, gold bonds) and salary (EPF, gratuity, HRA, leave, hikes).", "Everyday": "Everyday money: GST, discounts, no-cost EMIs, unit prices, gold, EV vs petrol, policy returns, net worth, credit health and life cover." };
 const catKey = name => CAT_KEY[name] || "stocks";
 // The category blocks with a pill link to every calculator (homepage and 404 page).
 const bento = () => { const cats = groups.filter(g => g.items.some(x => x.calc || x.lots)); return `<section class="hb-bento" id="calculators" aria-label="All calculators">${cats.map(g => { const k = catKey(g.name); return `<div class="hb-blk hb-${k} t-${k}" id="cat-${slugOf(g.name)}"><div class="hb-head"><div><h2>${esc(g.name)} calculators</h2><p>${esc(CAT_BLURB[g.name] || "")}</p></div><span class="hb-n" aria-hidden="true">${String(g.items.length).padStart(2, "0")}</span></div>
@@ -221,7 +228,7 @@ let n = 0;
     .split("{{WORKHIDDEN}}").join(isCalc ? "" : " hidden")
     .replace("{{FORMULA}}", () => isCalc ? c.formula : "").replace("{{HOWTO}}", () => isCalc ? guide(c) + howTo(c) + trust(c) : "").replace("{{BYLINE}}", () => isCalc ? byline(c) : "")
     .replace("{{RELATED}}", () => isCalc ? related(c) : "")
-    .replace("{{AFFILIATE}}", () => isCalc ? affiliateBox(c) : "")
+    .replace("{{NOTICE}}", () => isCalc ? notice(c) : "").replace("{{AFFILIATE}}", () => isCalc ? affiliateBox(c) : "")
     .replace("{{AD1}}", () => isCalc ? adUnit() : "").replace("{{AD2}}", () => isCalc ? adUnit("wide") : "").replace("{{AD3}}", () => isCalc ? netBox() : "")
     .replace("{{ADSCRIPT}}", () => !AD_CLIENT && isCalc && customAds.head ? customAds.head : AD_CLIENT ? adLoader() : "");
   if (c.id === "home") html = html.replace(/<header>[\s\S]*?<\/header>\s*/, ""); // the homepage carries its own h1 inside the intro panel
@@ -284,7 +291,7 @@ ${netBox()}<section class="howto related"><h2>More guides</h2><ul class="ticks">
     .replace("{{SUPPORT}}", () => { const k = all.find(x => x.id === "coffee"); return `<div class="support"><a href="${pathOf(k)}" data-id="coffee"><span class="ic">${esc(k.ic)}</span><span class="lb">${esc(k.name)}</span></a></div>`; })
     .replace("{{H1}}", () => esc(nf.name)).replace("{{LEDE}}", () => esc(nf.lede)).replace("{{BODYCLASS}}", "").replace("{{CRUMB}}", "")
     .replace("{{FIELDS}}", "").replace("{{RESULT}}", "").replace("{{PAGEHIDDEN}}", "").replace("{{PAGEHTML}}", () => nf.html).split("{{WORKHIDDEN}}").join(" hidden")
-    .replace("{{FORMULA}}", "").replace("{{HOWTO}}", "").replace("{{BYLINE}}", "").replace("{{RELATED}}", "").replace("{{AFFILIATE}}", "")
+    .replace("{{FORMULA}}", "").replace("{{HOWTO}}", "").replace("{{BYLINE}}", "").replace("{{RELATED}}", "").replace("{{NOTICE}}", "").replace("{{AFFILIATE}}", "")
     .replace("{{AD1}}", "").replace("{{AD2}}", "").replace("{{AD3}}", "")
     .replace("{{ADSCRIPT}}", () => AD_CLIENT ? adLoader() : "");
   fs.writeFileSync(path.join(root, "404.html"), html); n++;

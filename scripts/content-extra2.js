@@ -1,6 +1,7 @@
 // Explainer text for the third batch of calculators. Same rules as content.js: factual, and no figures that change (tax rates, limits, scheme rates).
 module.exports = {
   "options-pl": {
+    riskNote: ["SEBI's studies of individual traders in equity futures and options have repeatedly found that about 9 in 10 of them make a net loss. This calculator only shows the arithmetic of a trade. It is not a recommendation to trade.", "https://www.sebi.gov.in/sebi_data/attachdocs/aug-2026/1787236407005.pdf"],
     heading: "How option profit and loss works at expiry",
     intro: [
       "An option buyer pays a premium for the right to buy (call) or sell (put) at the strike price. At expiry, a call is worth the amount by which the price is above the strike, and a put is worth the amount by which it is below. If the option ends out of the money it expires worthless, and the buyer loses the premium.",
@@ -84,14 +85,17 @@ module.exports = {
   },
   gratuity: {
     reviewed: "2026-11-25",
-    checked: "the ₹20 lakh tax-free limit",
+    checked: "the ₹20 lakh tax-free limit, how the exempt amount is worked out, and the labour codes' wage and eligibility rules",
     sources: [
-      ["Income tax exemption for gratuity raised to ₹20 lakh (Press Information Bureau)","https://www.pib.gov.in/newsite/PrintRelease.aspx?relid=189273"]
+      ["Income tax exemption for gratuity raised to ₹20 lakh (Press Information Bureau)","https://www.pib.gov.in/newsite/PrintRelease.aspx?relid=189273"],
+      ["Tax-free incomes, including gratuity (Income Tax Department)","https://wm.incometaxindia.gov.in/w/tax-free-incomes"],
+      ["The four labour codes come into effect (Press Information Bureau)","https://www.pib.gov.in/PressReleasePage.aspx?PRID=2192463"],
+      ["FAQs on the labour codes and central rules (Ministry of Labour and Employment)","https://www.labour.gov.in/static/uploads/2026/11/da640b1558a315e81e22ce5ac12f463f.pdf"]
     ],
     heading: "How gratuity is calculated in India",
     intro: [
-      "Gratuity is a lump sum an employer pays when you leave after long service, retire, or in case of death or disability. Under gratuity law (the Payment of Gratuity Act, now part of the Code on Social Security), you are normally eligible after 5 years of continuous service with the same employer, and fixed-term employees may qualify sooner.",
-      "For covered employers, gratuity is 15 days' wages for each year of service, where a month is taken as 26 working days. For example, with a last drawn basic pay plus DA of ₹50,000 and 10 years of service, the gratuity is ₹50,000 × 15 ÷ 26 × 10, about ₹2.88 lakh."
+      "Gratuity is a lump sum an employer pays when you leave after long service, retire, or in case of death or disability. Under gratuity law (the Payment of Gratuity Act, now part of the Code on Social Security), you are normally eligible after 5 years of continuous service with the same employer. Since the labour codes took effect on 21 November 2025, fixed-term employees qualify after 1 year.",
+      "For covered employers, gratuity is 15 days' wages for each year of service, where a month is taken as 26 working days. Under the labour codes, wages must be at least half of your total pay. For example, with basic pay plus DA of ₹50,000, total pay of ₹1.2 lakh a month and 10 years of service, wages for gratuity are ₹60,000, so the gratuity is about ₹3.46 lakh. The tax exemption is still worked out on basic pay plus DA, about ₹2.88 lakh here, so about ₹57,700 of it is taxable."
     ],
     faq: [
       ["Does a part year of service count?", "Under gratuity law, service of more than 6 months in the final year is rounded up to a full year. So 9 years and 7 months counts as 10 years."],

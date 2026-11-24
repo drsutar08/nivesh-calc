@@ -1,0 +1,3 @@
+# Cloudflare Pages redirects: old address, new address, status
+/eps-pension-calculator/ /epf-calculator/ 301
+/eps-pension-calculator /epf-calculator/ 301

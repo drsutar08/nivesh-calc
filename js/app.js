@@ -176,6 +176,14 @@ const CALCS = [
     const roce=f.ebit/ce*100, de=f.debt/f.eq, ic=f.int>0?f.ebit/f.int:Infinity, cr=f.ca/f.cl, qr=(f.ca-f.inv)/f.cl;
     return {hero:["Return on capital employed (ROCE)",pct(roce),sign(roce)],rows:[["Capital employed (total assets − current liabilities)",inr(ce,0)+" cr"],["Debt to equity",num(de,2)+"×",de>2?"loss":de<=1?"gain":""],["Interest coverage",isFinite(ic)?num(ic,1)+"×":"No interest cost",isFinite(ic)?(ic<1.5?"loss":ic>=3?"gain":""):"gain"],["Current ratio",num(cr,2)+"×",cr<1?"loss":cr>=1.5?"gain":""],["Quick ratio (excludes inventory)",num(qr,2)+"×",qr<1?"loss":"gain"]]}},
   formula:"ROCE = EBIT ÷ capital employed, where capital employed = total assets − current liabilities. Debt to equity = total debt ÷ shareholders' equity. Interest coverage = EBIT ÷ interest expense. Current ratio = current assets ÷ current liabilities. Quick ratio = (current assets − inventory) ÷ current liabilities. Use the same units, such as ₹ crore, for every figure. Normal levels differ by industry."},
+ {id:"trading-expectancy",group:"Stocks",ic:"EX",name:"Trading Expectancy Calculator",lede:"See whether a trading strategy makes money from its risk-reward and win rate.",
+  fields:[["entry","Entry price",250,"₹"],["stop","Stop-loss price",240,"₹"],["target","Target price",270,"₹"],["wr","Win rate",40,"%"],["q","Quantity per trade",100,"units"]],
+  calc:f=>{ if(f.stop>=f.entry||f.target<=f.entry) return {hero:["Expectancy per trade","—"],rows:[],note:"For a buy trade, the stop-loss must be below the entry price and the target above it."};
+    if(f.wr>100) return {hero:["Expectancy per trade","—"],rows:[],note:"The win rate cannot be more than 100%."};
+    const risk=f.entry-f.stop, rew=f.target-f.entry, R=rew/risk, w=f.wr/100, eR=w*R-(1-w), e=eR*risk*f.q, be=1/(1+R)*100;
+    return {hero:["Expectancy per trade",inr(e,0),sign(e)],rows:[["Risk : reward",`1 : ${num(R,2)}`],["Win rate needed to break even",pct(be),f.wr>=be?"gain":"loss"],["Expectancy in R (multiples of risk)",num(eR,2)+"R",sign(eR)],["Expected result over 100 trades",inr(e*100,0),sign(e)],["Loss on a losing trade",inr(risk*f.q,0),"loss"],["Profit on a winning trade",inr(rew*f.q,0),"gain"]],
+      note:e<0?"At this win rate the strategy loses money over time. Improve the win rate or the risk-reward.":null}},
+  formula:"Risk per share = entry − stop-loss and reward per share = target − entry, so R = reward ÷ risk. Expectancy (in R) = win rate × R − (1 − win rate). Expectancy per trade = expectancy in R × risk per share × quantity. Break-even win rate = 1 ÷ (1 + R). Brokerage, charges and slippage are not included and lower the real expectancy."},
  {id:"sip",group:"Mutual funds",ic:"↻",name:"SIP Calculator",lede:"Estimate what a monthly investment grows to over time.",
   fields:[["p","Monthly investment",10000,"₹"],["r","Expected return (p.a.)",12,"%"],["y","Duration",15,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12, fv= i? f.p*((Math.pow(1+i,n)-1)/i)*(1+i) : f.p*n, inv=f.p*n;
@@ -312,6 +320,18 @@ const CALCS = [
     return {hero:["Gap between the highest and lowest",inr(hi-lo,0)],rows:[["Weekly SIP value",inr(w,0)],["Monthly SIP value",inr(mo,0)],["Quarterly SIP value",inr(q,0)],["Total invested (same for all)",inr(yr*f.y,0)],["Gap as a share of the monthly SIP value",pct((hi-lo)/mo*100)]],
       note:"The gap is tiny and comes only from timing. A larger instalment paid at the start of each period puts money to work a little earlier, but needs the cash upfront. Choose the frequency that matches when you have the money."}},
   formula:"Each frequency invests the same amount a year: monthly amount × 12, split into 52 weekly, 12 monthly or 4 quarterly instalments, each paid at the start of its period. Each uses the equivalent periodic rate, (1 + yearly return)<sup>1/k</sup> − 1 for k instalments a year, so the comparison shows only the effect of timing. Value = P × [((1 + i)<sup>n</sup> − 1) ÷ i] × (1 + i)."},
+ {id:"portfolio-return",group:"Mutual funds",ic:"PR",name:"Portfolio Return Calculator",lede:"Find the overall return of your portfolio from the return on each holding.",
+  zeroOk:["v2","r2","v3","r3","v4","r4"],
+  fields:[["v1","Holding 1 value",500000,"₹"],["r1","Holding 1 return (p.a.)",12,"%"],["v2","Holding 2 value",300000,"₹"],["r2","Holding 2 return (p.a.)",7,"%"],["v3","Holding 3 value",150000,"₹"],["r3","Holding 3 return (p.a.)",15,"%"],["v4","Holding 4 value",50000,"₹"],["r4","Holding 4 return (p.a.)",6.5,"%"]],
+  calc:f=>{ const H=[[f.v1,f.r1],[f.v2,f.r2],[f.v3,f.r3],[f.v4,f.r4]].filter(([v])=>v>0), tot=H.reduce((s,[v])=>s+v,0), wr=H.reduce((s,[v,r])=>s+v*r,0)/tot;
+    return {hero:["Weighted portfolio return",pct(wr),sign(wr)],rows:[["Total portfolio value",inr(tot,0)],["Expected gain in a year",inr(tot*wr/100,0),sign(wr)],...H.map(([v,r],k)=>[`Holding ${k+1}: share of portfolio, return`,`${pct(v/tot*100,1)}, ${pct(r,1)}`]),["Value in 10 years at this return",inr(tot*Math.pow(1+wr/100,10),0)]]}},
+  formula:"Weighted return = the sum of (holding value × holding return) ÷ total value. Each holding's return counts in proportion to its share of the portfolio. Use the same kind of return for every holding, such as each fund's expected or past yearly return. Returns can be negative."},
+ {id:"mf-units",group:"Mutual funds",ic:"UN",name:"Mutual Fund Units Calculator",lede:"Find how many mutual fund units you get for an investment, after stamp duty.",
+  zeroOk:["sd"],
+  fields:[["a","Amount invested",10000,"₹"],["nav","NAV on the purchase date",45.67,"₹"],["sd","Stamp duty",0.005,"%"]],
+  calc:f=>{ const duty=f.a*f.sd/100, net=f.a-duty, u=net/f.nav;
+    return {hero:["Units allotted",num(u,3)],rows:[["Stamp duty",inr(duty)],["Amount invested after stamp duty",inr(net)],["Value of the units at this NAV",inr(u*f.nav)],[`Value if the NAV rises 10% to ${inr(f.nav*1.1)}`,inr(u*f.nav*1.1)]]}},
+  formula:"Units = (amount − stamp duty) ÷ NAV, usually rounded to 3 decimal places. Stamp duty applies to mutual fund purchases, including SIP instalments, but not to redemptions. The NAV used depends on when your money reaches the fund, which can be a day or more after you pay. The default stamp duty is the rate at the time of writing."},
  {id:"emi",group:"Loans & growth",ic:"≡",name:"EMI Calculator",lede:"Find the monthly instalment and total interest on a loan.",
   fields:[["p","Loan amount",3000000,"₹"],["r","Interest rate (p.a.)",8.5,"%"],["y","Tenure",20,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12,e= i? f.p*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1) : f.p/n,tot=e*n;
@@ -485,6 +505,13 @@ const CALCS = [
     const gross=f.rent*12, net=f.rent*(12-f.vac)-f.cost, gy=gross/f.price*100, ny=net/f.price*100;
     return {hero:["Net rental yield",pct(ny),sign(ny)],rows:[["Gross rental yield",pct(gy)],["Yearly rent (full occupancy)",inr(gross,0)],["Net rental income a year",inr(net,0),sign(net)],["Price-to-rent ratio",num(f.price/gross,1)+" years of rent"],["Years for net rent to equal the price",net>0?num(f.price/net,1):"—"]]}},
   formula:"Gross rental yield = yearly rent ÷ property price. Net rental yield = (rent for the months let − yearly costs) ÷ property price. The price-to-rent ratio is how many years of rent equal the price. Tax on rental income, loan interest and any rise in the property's value are not included."},
+ {id:"prepay-or-invest",group:"Loans & growth",ic:"P/I",name:"Prepay Loan or Invest Calculator",lede:"Compare using spare money to prepay a loan with investing it instead.",
+  zeroOk:["tax"],
+  fields:[["a","Amount you have",500000,"₹"],["lr","Loan interest rate (p.a.)",8.5,"%"],["y","Years left on the loan",15,"years"],["ir","Expected return on investment (p.a.)",11,"%"],["tax","Tax on investment gains",12.5,"%"]],
+  calc:f=>{ const pre=f.a*Math.pow(1+f.lr/100,f.y), gross=f.a*Math.pow(1+f.ir/100,f.y), inv=gross-(gross-f.a)*f.tax/100, d=inv-pre, ar=(Math.pow(inv/f.a,1/f.y)-1)*100;
+    return {hero:[d>=0?"Investing ends ahead by":"Prepaying ends ahead by",inr(Math.abs(d),0)],rows:[["Value of prepaying (interest saved, compounded)",inr(pre,0)],["Investment value after tax",inr(inv,0)],["Guaranteed return from prepaying",pct(f.lr)],["Investment return after tax (p.a.)",pct(ar)],["Break-even investment return before tax",(()=>{let lo=0,hi=100;for(let k=0;k<100;k++){const m=(lo+hi)/2,g=f.a*Math.pow(1+m/100,f.y),v=g-(g-f.a)*f.tax/100;if(v>pre)hi=m;else lo=m;}return pct((lo+hi)/2)})()]],
+      note:"Prepaying gives a guaranteed return equal to the loan rate. Investing may earn more but can also earn less, so compare the gap with the risk you are taking."}},
+  formula:"Prepaying saves interest at the loan rate, so it works like a guaranteed investment growing at that rate: amount × (1 + loan rate)<sup>years</sup>. Investing grows at the expected return, and tax is taken off the gain at the end: amount × (1 + return)<sup>years</sup>, minus tax on the gain. Tax benefits on home loan interest are not included and would lower the effective loan rate."},
  {id:"ssy",group:"Savings & salary",ic:"SS",name:"Sukanya Samriddhi Yojana Calculator",lede:"Estimate the tax-free maturity value of a Sukanya Samriddhi account for your daughter.",
   fields:[["d","Yearly deposit",150000,"₹"],["r","Interest rate (p.a.)",8.2,"%"],["age","Girl's age when the account is opened",5,"years"]],
   calc:f=>{ const dep=Math.min(f.d,150000); let b=0; for(let y=1;y<=21;y++){ if(y<=15) b+=dep; b*=1+f.r/100; } const inv=dep*15;
@@ -563,6 +590,13 @@ const CALCS = [
   calc:f=>{ const day=f.sal/f.div, enc=day*f.days, free=Math.min(enc,f.cap,f.sal*10);
     return {hero:["Leave encashment",inr(enc,0)],rows:[["Salary per day",inr(day,0)],["Tax-free on retirement or resignation (non-government)",inr(free,0),"gain"],["Taxable part",inr(enc-free,0),enc>free?"loss":""],["Taxable if encashed while still in service",inr(enc,0),"loss"]]}},
   formula:"Leave encashment = (basic pay + DA) ÷ days in a month × unused leave days. Many employers count 30 days in a month, and some use 26. For non-government employees leaving a job, the tax-free part is the lowest of the encashment, the limit set by law and 10 months' average salary. The law also limits the leave counted for tax to 30 days per completed year of service. Encashment while still in service is fully taxable. The default limit is the one at the time of writing."},
+ {id:"eps-pension",group:"Savings & salary",ic:"PS",name:"EPS Pension Calculator",lede:"Estimate your monthly pension from the Employees' Pension Scheme.",
+  fields:[["sal","Pensionable salary (average monthly)",15000,"₹"],["y","Years of service",25,"years"]],
+  calc:f=>{ const svc=Math.floor(f.y)+(f.y-Math.floor(f.y)>0.5?1:0), wt=svc>=20?2:0, cnt=svc+wt, p=Math.max(1000,f.sal*cnt/70);
+    if(svc<10) return {hero:["Monthly pension","Not eligible yet"],rows:[["Years of service counted",num(svc,0)],["Years still needed for a pension",num(10-svc,0)]],note:"A monthly pension needs at least 10 years of service. With less, you can usually withdraw the pension amount when you leave instead."};
+    const notes=[]; if(f.sal>15000) notes.push("Pensionable salary is capped at ₹15,000 a month unless you opted for a pension on higher wages.");
+    return {hero:["Monthly pension",inr(p,0),"gain"],rows:[["Pensionable service counted",num(cnt,0)+" years"],["Bonus years for 20 or more years of service",num(wt,0)],["Yearly pension",inr(p*12,0)],["Minimum pension applied",f.sal*cnt/70<1000?"Yes":"No"]],note:notes.join(" ")||null}},
+  formula:"Monthly pension = pensionable salary × pensionable service ÷ 70. Pensionable salary is the average salary of the last 60 months, capped at ₹15,000 for most members. Service of more than 6 months in a year counts as a full year, and 2 bonus years are added for 20 or more years of service. A minimum pension of ₹1,000 a month applies. The pension usually starts at 58. The cap and minimum are the figures at the time of writing."},
  {id:"percentage",group:"Everyday",ic:"%",name:"Percentage Calculator",lede:"Three common percentage questions, answered at once.",
   fields:[["a","Value A",25,""],["b","Value B",480,""]],
   calc:f=>{const ch=(f.b-f.a)/f.a*100;
@@ -630,7 +664,23 @@ const CALCS = [
   calc:f=>{ const u=f.used/f.lim*100, mx=f.lim*f.t/100, pay=Math.max(0,f.used-mx);
     return {hero:["Credit utilisation",pct(u),u>f.t?"loss":"gain"],rows:[["Highest balance within your target",inr(mx,0)],["Pay down to reach the target",inr(pay,0),pay>0?"loss":"gain"],["Available credit",inr(Math.max(0,f.lim-f.used),0)],["Limit needed for this balance at your target",inr(f.used/(f.t/100),0)]],
       note:u>f.t?"Paying the balance before the statement date lowers the balance reported to credit bureaus.":null}},
-  formula:"Credit utilisation = balance used ÷ total credit limit. Credit bureaus look at how much of your limit you use, and lower is generally better. Many lenders treat staying below about 30% as healthy. Pay down = balance − (limit × target). Paying in full every month matters more than the exact ratio."}
+  formula:"Credit utilisation = balance used ÷ total credit limit. Credit bureaus look at how much of your limit you use, and lower is generally better. Many lenders treat staying below about 30% as healthy. Pay down = balance − (limit × target). Paying in full every month matters more than the exact ratio."},
+ {id:"no-cost-emi",group:"Everyday",ic:"NC",name:"No-Cost EMI Calculator",lede:"Find the hidden cost of a 'no-cost EMI' offer, from GST and processing fees.",
+  zeroOk:["fee"],
+  fields:[["price","Product price",60000,"₹"],["n","Number of EMIs",6,"months"],["r","Interest rate charged by the lender (p.a.)",15,"%"],["fee","Processing fee",199,"₹"],["gst","GST on interest and fees",18,"%"]],
+  calc:f=>{ const n=Math.round(f.n), i=f.r/1200, emi=f.price/n, P=emi*(1-Math.pow(1+i,-n))/i, int=f.price-P, gi=int*f.gst/100, fe=f.fee*(1+f.gst/100), cost=gi+fe;
+    return {hero:["Hidden cost of the no-cost EMI",inr(cost,0),"loss"],rows:[["EMI",inr(emi,0)],["Discount given upfront (equal to the interest)",inr(int,0)],["Interest charged by the lender",inr(int,0)],["GST on the interest",inr(gi,0),"loss"],["Processing fee with GST",inr(fe,0),fe>0?"loss":""],["Effective cost as a share of the price",pct(cost/f.price*100),"loss"]]}},
+  formula:"In a no-cost EMI, the seller gives a discount equal to the interest, so your EMIs add up to the product price. The lender still charges interest, and GST is charged on that interest and on any processing fee. Those are the real extra costs. Interest is worked out on a reducing balance: the amount financed is the EMIs' present value at the lender's rate. Paying late or partly can add further charges."},
+ {id:"unit-price",group:"Everyday",ic:"UP",name:"Unit Price Comparison Calculator",lede:"Compare two pack sizes to see which one is cheaper per gram, ml or piece.",
+  fields:[["pa","Pack A price",120,"₹"],["sa","Pack A size",500,"g, ml or pcs"],["pb","Pack B price",210,"₹"],["sb","Pack B size",1000,"g, ml or pcs"]],
+  calc:f=>{ const ua=f.pa/f.sa, ub=f.pb/f.sb, cheap=ua<=ub?"Pack A":"Pack B", sv=Math.abs(ua-ub)/Math.max(ua,ub)*100;
+    return {hero:["Better value",ua===ub?"Same price per unit":cheap,"gain"],rows:[["Pack A price per 100 units",inr(ua*100)],["Pack B price per 100 units",inr(ub*100)],["Cheaper by",pct(sv)],[`Saving if you buy ${num(Math.max(f.sa,f.sb),0)} units of the better pack`,inr(Math.abs(ua-ub)*Math.max(f.sa,f.sb))]]}},
+  formula:"Price per unit = pack price ÷ pack size. Comparing per 100 units, such as per 100 g or 100 ml, makes packs of different sizes easy to compare. Use the same unit for both packs, for example convert 1 kg to 1,000 g. A bigger pack only saves money if you use it before it expires."},
+ {id:"habit-cost",group:"Everyday",ic:"HC",name:"Cost of a Habit Calculator",lede:"See what a small regular spend adds up to, and what it could grow to if invested.",
+  fields:[["d","Amount spent each time",200,"₹"],["w","Times a week",5,"times"],["y","Years",20,"years"],["r","Return if invested instead (p.a.)",12,"%"]],
+  calc:f=>{ const yr=f.d*f.w*52, mo=yr/12, n=Math.round(f.y*12), i=f.r/1200, fv=mo*((Math.pow(1+i,n)-1)/i)*(1+i);
+    return {hero:["Could grow to, if invested",inr(fv,0),"gain"],rows:[["Spent a year",inr(yr,0)],["Spent a month",inr(mo,0)],[`Spent over ${num(f.y,0)} years`,inr(yr*f.y,0)],["Growth you would miss",inr(fv-yr*f.y,0)]],bar:[yr*f.y,fv-yr*f.y],barLabels:["Spent","Growth"]}},
+  formula:"Yearly spend = amount × times a week × 52, and monthly spend = yearly spend ÷ 12. If that monthly amount were invested as a SIP instead, its value = P × [((1 + i)<sup>n</sup> − 1) ÷ i] × (1 + i), where i is the monthly rate and n is the number of months. Returns are assumed to be steady."}
 ];
 
 

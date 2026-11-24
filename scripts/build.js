@@ -201,6 +201,8 @@ const stamp = (key, sig) => { const s = crypto.createHash("md5").update(sig).dig
   return lm[key].d; };
 const pageSig = (c, isCalc) => JSON.stringify([c.name, c.lede, c.html || "", c.formula || "", c.fields || c.lots || "", c.calc ? String(c.calc) : "", content[c.id] || "", isCalc ? prerender(c).result : ""]);
 const laterOf = (a, b) => (b && b > a ? b : a);
+// Which lastmod entry each sitemap URL uses, so scripts/indexnow.js can ping only pages whose content changed.
+const sigKey = {};
 const sitemap = [];
 let n = 0;
 [home(), ...all].forEach(c => {
@@ -226,7 +228,7 @@ let n = 0;
   const out = c.id === "home" ? path.join(root, "index.html") : path.join(root, pathOf(c), "index.html");
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, html); n++;
-  sitemap.push([urlOf(c), laterOf(stamp(c.id, pageSig(c, isCalc)), (reviewOf(c) || {}).reviewed)]);
+  sitemap.push([urlOf(c), laterOf(stamp(c.id, pageSig(c, isCalc)), (reviewOf(c) || {}).reviewed)]); sigKey[urlOf(c)] = c.id;
 });
 
 // Guides
@@ -246,7 +248,7 @@ const guideSeo = (title, desc, url, ld) => `<title>${esc(title)} | ${SITE_NAME}<
 <meta name="twitter:description" content="${esc(desc)}">
 <meta name="twitter:image" content="${OG_IMAGE}">
 <script type="application/ld+json">${JSON.stringify(ld)}</script>`;
-const writeGuide = (dir, html, key, url, sig) => { const out = path.join(root, dir, "index.html"); fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, html); n++; sitemap.push([url, stamp(key, sig)]); };
+const writeGuide = (dir, html, key, url, sig) => { const out = path.join(root, dir, "index.html"); fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, html); n++; sitemap.push([url, stamp(key, sig)]); sigKey[url] = key; };
 // A guide paragraph is shown as a formula box only when it reads "Name = expression" and is a single statement, not prose.
 const isFormula = p => /^[A-Za-z ]+ = /.test(p) && !/[.!?]\s+[A-Z]/.test(p) && p.length <= 120;
 guides.forEach(g => {
@@ -290,6 +292,8 @@ ${netBox()}<section class="howto related"><h2>More guides</h2><ul class="ticks">
 // Web app manifest
 fs.writeFileSync(path.join(root, "site.webmanifest"), JSON.stringify({ name: "Nivesh Calc", short_name: "Nivesh Calc", description: "Free stock and investment calculators", start_url: "./", display: "standalone", background_color: "#f5f7f6", theme_color: "#0f7a55", icons: [{ src: "images/icon-192.png", sizes: "192x192", type: "image/png" }, { src: "images/icon-512.png", sizes: "512x512", type: "image/png" }] }, null, 2));
 fs.writeFileSync(lmFile, JSON.stringify(lm, null, 1));
+// Content signature of every sitemap URL (same signature that decides lastmod), read by scripts/indexnow.js.
+fs.writeFileSync(path.join(__dirname, ".pagesigs.json"), JSON.stringify(Object.fromEntries(Object.entries(sigKey).map(([u, k]) => [u, lm[k].s])), null, 1) + "\n");
 fs.writeFileSync(path.join(root, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   sitemap.map(([u, d]) => `  <url><loc>${u}</loc><lastmod>${d}</lastmod></url>`).join("\n") + `\n</urlset>\n`);
 fs.writeFileSync(path.join(root, "robots.txt"), `User-agent: *\nAllow: /\n\nSitemap: ${SITE}sitemap.xml\n`);

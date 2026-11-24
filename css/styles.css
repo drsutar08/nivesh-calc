@@ -97,6 +97,7 @@ dd{margin:0;font:600 14px var(--f-num);text-align:right;font-variant-numeric:tab
 .inp input[name]{font-family:var(--f-body)}
 .prose{gap:12px}
 .prose p{margin:0;color:var(--muted);max-width:68ch}
+.prose .ticks li{max-width:68ch}
 .prose h2{font:700 18px var(--f-display);letter-spacing:0;text-transform:none;color:var(--ink)}
 .prose a{color:var(--accent);font-weight:600;overflow-wrap:anywhere}
 .ticks{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}

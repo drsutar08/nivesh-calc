@@ -86,7 +86,7 @@ const byline = c => { const g = reviewOf(c); return g ? `<p class="byline">By <a
 function trust(c) {
   const g = reviewOf(c); if (!g) return "";
   const src = (g.sources || []).filter(([l, u]) => l && /^https:\/\//.test(u));
-  return `<h2 style="margin-top:16px" id="sources">Sources and review</h2><p>This calculator was last reviewed on <time datetime="${g.reviewed}">${longDate(g.reviewed)}</time> by <a href="${AUTHOR.path}">${esc(AUTHOR.name)}</a>, who checked its rates and rules against the official sources below. Rules can change, so check the latest official guidance before you act.</p>` +
+  return `<h2 style="margin-top:16px" id="sources">Sources and review</h2><p>This calculator was last reviewed on <time datetime="${g.reviewed}">${longDate(g.reviewed)}</time> by <a href="${AUTHOR.path}">${esc(AUTHOR.name)}</a>, who checked ${esc(g.checked || "its rates and rules")} against the official sources below. Rules can change, so check the latest official guidance before you act.</p>` +
     (src.length ? `<ul class="ticks sources">${src.map(([l, u]) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a></li>`).join("")}</ul>` : "");
 }
 
@@ -124,6 +124,9 @@ function seo(c, isCalc) {
   }];
   if (c.id === "home") ld.splice(0, 1, { "@context": "https://schema.org", "@type": "WebSite", name: SITE_NAME, url: SITE, description: c.desc, inLanguage: "en-IN", publisher: { "@type": "Organization", name: SITE_NAME, url: SITE, logo: SITE + "images/icon-512.png" } },
     { "@context": "https://schema.org", "@type": "ItemList", name: "Calculators", itemListElement: CALCS.map((x, i) => ({ "@type": "ListItem", position: i + 1, name: x.name, url: SITE + pathOf(x) })) });
+  if (c.id === "about") ld.splice(0, 1, { "@context": "https://schema.org", "@type": "AboutPage", name: c.name, url, description: c.lede, inLanguage: "en-IN",
+    mainEntity: { "@type": "Person", name: AUTHOR.name, url: SITE + AUTHOR.path, description: "Investor and software developer based in India who builds and maintains " + SITE_NAME + "." },
+    publisher: { "@type": "Organization", name: SITE_NAME, url: SITE } });
   if (content[c.id]) ld.push({ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: content[c.id].faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) });
   return `<title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">

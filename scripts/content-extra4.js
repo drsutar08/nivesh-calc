@@ -61,6 +61,11 @@ module.exports = {
     ]
   },
   kvp: {
+    reviewed: "2026-11-25",
+    checked: "the interest rate notified for October–December 2026",
+    sources: [
+      ["Small Savings: quarterly interest rate notifications (Ministry of Finance, Department of Economic Affairs)","https://dea.gov.in/budget-division/475"]
+    ],
     heading: "How Kisan Vikas Patra doubles your money",
     intro: [
       "Kisan Vikas Patra is a government savings certificate sold at post offices. It doubles a one-time investment over a fixed period, which the government sets along with the interest rate. Despite the name, anyone can invest, not only farmers.",
@@ -73,6 +78,11 @@ module.exports = {
     ]
   },
   pomis: {
+    reviewed: "2026-11-25",
+    checked: "the interest rate notified for October–December 2026",
+    sources: [
+      ["Small Savings: quarterly interest rate notifications (Ministry of Finance, Department of Economic Affairs)","https://dea.gov.in/budget-division/475"]
+    ],
     heading: "How the Post Office Monthly Income Scheme works",
     intro: [
       "The Post Office Monthly Income Scheme is a government-backed deposit that pays interest every month for 5 years, then returns your deposit. It suits people who want a steady, safe monthly income, such as retirees.",

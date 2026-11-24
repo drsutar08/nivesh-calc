@@ -109,6 +109,12 @@ module.exports = {
     ]
   },
   "capital-gains": {
+    reviewed: "2026-11-25",
+    checked: "the 20% short-term rate, the 12.5% long-term rate and the ₹1.25 lakh exemption for listed equity",
+    sources: [
+      ["CBDT FAQs on the capital gains tax changes (Press Information Bureau)","https://www.pib.gov.in/PressReleasePage.aspx?PRID=2036604"],
+      ["Section 112A: tax on long-term capital gains on listed equity (Income Tax Department)","https://wm.incometaxindia.gov.in/w/section-112a-59"]
+    ],
     heading: "Short-term and long-term capital gains on shares",
     intro: [
       "Profit from selling shares is a capital gain. It is treated as short-term or long-term depending on how long you held the shares, and the two are taxed at different rates. Long-term gains on listed equity also have a yearly exemption limit.",

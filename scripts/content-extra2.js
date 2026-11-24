@@ -37,6 +37,11 @@ module.exports = {
     ]
   },
   ssy: {
+    reviewed: "2026-11-25",
+    checked: "the interest rate notified for October–December 2026",
+    sources: [
+      ["Small Savings: quarterly interest rate notifications (Ministry of Finance, Department of Economic Affairs)","https://dea.gov.in/budget-division/475"]
+    ],
     heading: "How the Sukanya Samriddhi Yojana grows",
     intro: [
       "Sukanya Samriddhi Yojana is a government-backed savings scheme for a girl child. A parent or guardian can open the account before she turns 10 and deposit money for 15 years. The account matures 21 years after it is opened, so the balance keeps earning interest for 6 more years after the last deposit.",
@@ -61,6 +66,11 @@ module.exports = {
     ]
   },
   epf: {
+    reviewed: "2026-11-25",
+    checked: "the 8.25% rate recommended for 2025-26",
+    sources: [
+      ["EPF interest rate of 8.25% recommended for 2025-26 (Press Information Bureau)","https://www.pib.gov.in/PressReleasePage.aspx?PRID=2234502"]
+    ],
     heading: "How your EPF balance grows",
     intro: [
       "The Employees' Provident Fund is a retirement savings scheme for salaried employees. Each month you contribute a share of your basic pay and dearness allowance, and your employer contributes too. Part of the employer's share goes to the Employees' Pension Scheme (EPS), and the rest goes into your EPF account.",
@@ -73,6 +83,11 @@ module.exports = {
     ]
   },
   gratuity: {
+    reviewed: "2026-11-25",
+    checked: "the ₹20 lakh tax-free limit",
+    sources: [
+      ["Income tax exemption for gratuity raised to ₹20 lakh (Press Information Bureau)","https://www.pib.gov.in/newsite/PrintRelease.aspx?relid=189273"]
+    ],
     heading: "How gratuity is calculated in India",
     intro: [
       "Gratuity is a lump sum an employer pays when you leave after long service, retire, or in case of death or disability. Under gratuity law (the Payment of Gratuity Act, now part of the Code on Social Security), you are normally eligible after 5 years of continuous service with the same employer, and fixed-term employees may qualify sooner.",

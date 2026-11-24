@@ -61,6 +61,11 @@ module.exports = {
     ]
   },
   scss: {
+    reviewed: "2026-11-25",
+    checked: "the interest rate notified for October–December 2026",
+    sources: [
+      ["Small Savings: quarterly interest rate notifications (Ministry of Finance, Department of Economic Affairs)","https://dea.gov.in/budget-division/475"]
+    ],
     heading: "How the Senior Citizens Savings Scheme pays you",
     intro: [
       "The Senior Citizens Savings Scheme is a government-backed deposit for people aged 60 and above, and for some retirees below 60. It pays interest every quarter, which makes it a popular source of regular income after retirement.",
@@ -73,6 +78,11 @@ module.exports = {
     ]
   },
   nsc: {
+    reviewed: "2026-11-25",
+    checked: "the interest rate notified for October–December 2026",
+    sources: [
+      ["Small Savings: quarterly interest rate notifications (Ministry of Finance, Department of Economic Affairs)","https://dea.gov.in/budget-division/475"]
+    ],
     heading: "How a National Savings Certificate grows",
     intro: [
       "The National Savings Certificate is a fixed-income investment sold at post offices, backed by the government. Interest is compounded every year but paid only at maturity, together with the amount you invested.",

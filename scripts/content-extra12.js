@@ -2,6 +2,7 @@
 module.exports = {
   "income-tax": {
     reviewed: "2026-11-25",
+    checked: "the FY 2026-27 slabs, rebate, standard deductions, surcharge and cess",
     sources: [
       ["Computation of tax for individuals (Income Tax Department)", "https://wm.incometaxindia.gov.in/w/computation-of-tax-for-individual-1"],
       ["Rebate under section 87A (Income Tax Department)", "https://wm.incometaxindia.gov.in/w/what-is-rebate-under-section-87a-for-f.y-2025-26-and-who-can-claim-it-"],

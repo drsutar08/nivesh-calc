@@ -49,6 +49,11 @@ module.exports = {
     ]
   },
   ppf: {
+    reviewed: "2026-11-25",
+    checked: "the interest rate notified for October–December 2026",
+    sources: [
+      ["Small Savings: quarterly interest rate notifications (Ministry of Finance, Department of Economic Affairs)","https://dea.gov.in/budget-division/475"]
+    ],
     heading: "How the Public Provident Fund grows",
     intro: [
       "The Public Provident Fund is a government-backed savings scheme with a 15-year lock-in. Deposits qualify for a tax deduction under the old tax regime, and both the interest and the maturity amount are tax-free, which makes it one of the safest long-term savings options in India.",

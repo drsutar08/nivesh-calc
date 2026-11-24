@@ -169,6 +169,13 @@ const CALCS = [
   calc:f=>{ const mc=f.price*f.sh, ev=mc+f.debt-f.cash;
     return {hero:["Market capitalisation",inr(mc,0)+" cr"],rows:[["Enterprise value",inr(ev,0)+" cr"],["EV / EBITDA",num(ev/f.ebitda,2)+"×"],["P/E (market cap ÷ net profit)",num(mc/f.np,2)+"×"],["Net debt",inr(f.debt-f.cash,0)+" cr"],["Net debt / EBITDA",num((f.debt-f.cash)/f.ebitda,2)+"×"]]}},
   formula:"Market capitalisation = share price × shares outstanding. Enterprise value (EV) = market cap + debt − cash, which is roughly what it would cost to buy the whole business, including its debt. EV/EBITDA compares that value with operating profit before interest, tax, depreciation and amortisation. P/E = market cap ÷ net profit. Enter amounts in ₹ crore and shares in crore."},
+ {id:"financial-ratios",group:"Stocks",ic:"FR",name:"Financial Ratios Calculator",lede:"Check a company's ROCE, debt-to-equity, interest cover and liquidity ratios in one place.",
+  zeroOk:["debt","int","inv"],
+  fields:[["ebit","EBIT (operating profit)",300,"₹ cr"],["ta","Total assets",2000,"₹ cr"],["ca","Current assets",700,"₹ cr"],["cl","Current liabilities",400,"₹ cr"],["inv","Inventory",200,"₹ cr"],["debt","Total debt",600,"₹ cr"],["eq","Shareholders' equity",1200,"₹ cr"],["int","Interest expense (yearly)",50,"₹ cr"]],
+  calc:f=>{ const ce=f.ta-f.cl; if(ce<=0) return {hero:["ROCE","—"],rows:[],note:"Current liabilities must be less than total assets."};
+    const roce=f.ebit/ce*100, de=f.debt/f.eq, ic=f.int>0?f.ebit/f.int:Infinity, cr=f.ca/f.cl, qr=(f.ca-f.inv)/f.cl;
+    return {hero:["Return on capital employed (ROCE)",pct(roce),sign(roce)],rows:[["Capital employed (total assets − current liabilities)",inr(ce,0)+" cr"],["Debt to equity",num(de,2)+"×",de>2?"loss":de<=1?"gain":""],["Interest coverage",isFinite(ic)?num(ic,1)+"×":"No interest cost",isFinite(ic)?(ic<1.5?"loss":ic>=3?"gain":""):"gain"],["Current ratio",num(cr,2)+"×",cr<1?"loss":cr>=1.5?"gain":""],["Quick ratio (excludes inventory)",num(qr,2)+"×",qr<1?"loss":"gain"]]}},
+  formula:"ROCE = EBIT ÷ capital employed, where capital employed = total assets − current liabilities. Debt to equity = total debt ÷ shareholders' equity. Interest coverage = EBIT ÷ interest expense. Current ratio = current assets ÷ current liabilities. Quick ratio = (current assets − inventory) ÷ current liabilities. Use the same units, such as ₹ crore, for every figure. Normal levels differ by industry."},
  {id:"sip",group:"Mutual funds",ic:"↻",name:"SIP Calculator",lede:"Estimate what a monthly investment grows to over time.",
   fields:[["p","Monthly investment",10000,"₹"],["r","Expected return (p.a.)",12,"%"],["y","Duration",15,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12, fv= i? f.p*((Math.pow(1+i,n)-1)/i)*(1+i) : f.p*n, inv=f.p*n;
@@ -285,6 +292,26 @@ const CALCS = [
   calc:f=>{ const amt=f.u*f.nav, l=amt*f.load/100, rec=amt-l, g=rec-f.u*f.bn;
     return {hero:["Amount you receive",inr(rec,0)],rows:[["Redemption value before exit load",inr(amt,0)],["Exit load deducted",inr(l,0),l>0?"loss":""],["Amount you invested in these units",inr(f.u*f.bn,0)],["Gain after exit load",inr(g,0),sign(g)],["Exit load as a share of your gain",f.u*(f.nav-f.bn)>0?pct(l/(f.u*(f.nav-f.bn))*100):"—"]]}},
   formula:"Redemption value = units × NAV on the redemption date. Exit load = redemption value × exit load %, and you receive the rest. The exit load applies only to units redeemed within the period set in the scheme's documents, often one year for equity funds. Tax on the gain is not included."},
+ {id:"lumpsum-goal",group:"Mutual funds",ic:"LG",name:"Lumpsum Goal Calculator",lede:"Find the one-time amount to invest today to reach a future goal.",
+  zeroOk:["inf"],
+  fields:[["goal","Goal amount in today's money",2500000,"₹"],["inf","Inflation (p.a.)",6,"%"],["y","Years until you need it",10,"years"],["r","Expected return (p.a.)",12,"%"]],
+  calc:f=>{ const fut=f.goal*Math.pow(1+f.inf/100,f.y), lump=fut/Math.pow(1+f.r/100,f.y), n=Math.round(f.y*12), i=f.r/1200, sip=fut/(((Math.pow(1+i,n)-1)/i)*(1+i));
+    return {hero:["Invest today",inr(lump,0)],rows:[["Goal amount in future rupees",inr(fut,0)],["Growth on your investment",inr(fut-lump,0),"gain"],["Or a monthly SIP of",inr(sip,0)],["Total invested through the SIP",inr(sip*n,0)]],bar:[lump,fut-lump],barLabels:["Invested","Growth"]}},
+  formula:"Future goal = today's cost × (1 + inflation)<sup>years</sup>. Lump sum needed today = future goal ÷ (1 + expected return)<sup>years</sup>. The monthly SIP alternative = future goal ÷ [((1 + i)<sup>n</sup> − 1) ÷ i × (1 + i)], where i is the monthly rate and n is the number of months. Returns are assumed to be steady."},
+ {id:"wedding-planner",group:"Mutual funds",ic:"WD",name:"Wedding Cost Planner",lede:"Estimate the future cost of a wedding and how much to invest for it.",
+  zeroOk:["have"],
+  fields:[["cost","Wedding cost in today's money",1500000,"₹"],["y","Years until the wedding",15,"years"],["inf","Cost inflation (p.a.)",7,"%"],["have","Savings already set aside",100000,"₹"],["r","Expected return (p.a.)",11,"%"]],
+  calc:f=>{ const n=Math.round(f.y*12), fut=f.cost*Math.pow(1+f.inf/100,f.y), hv=f.have*Math.pow(1+f.r/100,f.y), gap=Math.max(0,fut-hv), i=f.r/1200, k=((Math.pow(1+i,n)-1)/i)*(1+i);
+    return {hero:["Future cost of the wedding",inr(fut,0)],rows:[["Your savings will grow to",inr(hv,0)],["Still needed",inr(gap,0),gap>0?"loss":"gain"],["Monthly SIP needed",inr(gap/k,0)],["Or a lump sum today of",inr(gap/Math.pow(1+f.r/100,f.y),0)]],
+      note:gap===0?"Your existing savings are expected to cover the full cost.":null}},
+  formula:"Future cost = today's cost × (1 + inflation)<sup>years</sup>. Existing savings grow at the expected return. Monthly SIP needed = amount still needed ÷ [((1 + i)<sup>n</sup> − 1) ÷ i × (1 + i)], where i is the monthly rate and n is the number of months. Lump sum needed today = amount still needed ÷ (1 + return)<sup>years</sup>."},
+ {id:"sip-frequency",group:"Mutual funds",ic:"SF",name:"SIP Frequency Calculator",lede:"Compare weekly, monthly and quarterly SIPs that invest the same amount each year.",
+  fields:[["m","Amount you invest per month",10000,"₹"],["r","Expected return (p.a.)",12,"%"],["y","Years",10,"years"]],
+  calc:f=>{ const yr=f.m*12, fv=k=>{const i=Math.pow(1+f.r/100,1/k)-1, n=Math.round(f.y*k), p=yr/k; return p*((Math.pow(1+i,n)-1)/i)*(1+i)};
+    const w=fv(52), mo=fv(12), q=fv(4), hi=Math.max(w,mo,q), lo=Math.min(w,mo,q);
+    return {hero:["Gap between the highest and lowest",inr(hi-lo,0)],rows:[["Weekly SIP value",inr(w,0)],["Monthly SIP value",inr(mo,0)],["Quarterly SIP value",inr(q,0)],["Total invested (same for all)",inr(yr*f.y,0)],["Gap as a share of the monthly SIP value",pct((hi-lo)/mo*100)]],
+      note:"The gap is tiny and comes only from timing. A larger instalment paid at the start of each period puts money to work a little earlier, but needs the cash upfront. Choose the frequency that matches when you have the money."}},
+  formula:"Each frequency invests the same amount a year: monthly amount × 12, split into 52 weekly, 12 monthly or 4 quarterly instalments, each paid at the start of its period. Each uses the equivalent periodic rate, (1 + yearly return)<sup>1/k</sup> − 1 for k instalments a year, so the comparison shows only the effect of timing. Value = P × [((1 + i)<sup>n</sup> − 1) ÷ i] × (1 + i)."},
  {id:"emi",group:"Loans & growth",ic:"≡",name:"EMI Calculator",lede:"Find the monthly instalment and total interest on a loan.",
   fields:[["p","Loan amount",3000000,"₹"],["r","Interest rate (p.a.)",8.5,"%"],["y","Tenure",20,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12,e= i? f.p*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1) : f.p/n,tot=e*n;
@@ -419,6 +446,45 @@ const CALCS = [
     const i=f.rate/1200, n=Math.round(f.y*12), loan=b*(1-Math.pow(1+i,-n))/i, price=loan/(1-f.down/100);
     return {hero:["Car price you can afford",inr(price,0)],rows:[["Car loan",inr(loan,0)],["Down payment",inr(price-loan,0)],["EMI",inr(b,0)],["Total car costs a month (EMI + running costs)",inr(b+f.run,0)],["Total interest on the loan",inr(b*n-loan,0),"loss"]]}},
   formula:"The 20/4/10 rule: put down at least 20%, borrow for no more than 4 years, and keep all car costs within 10% of your income. EMI budget = income × share − running costs. Car loan = EMI × (1 − (1 + i)<sup>−n</sup>) ÷ i, and car price = loan ÷ (1 − down payment). The on-road price includes registration and insurance, so check that it fits too."},
+ {id:"debt-payoff",group:"Loans & growth",ic:"DP",name:"Debt Payoff Calculator",lede:"Compare the avalanche and snowball methods for clearing several loans faster.",
+  zeroOk:["b2","r2","m2","b3","r3","m3","extra"],
+  fields:[["b1","Loan 1 balance",60000,"₹"],["r1","Loan 1 interest rate (p.a.)",12,"%"],["m1","Loan 1 minimum payment",3000,"₹"],["b2","Loan 2 balance",200000,"₹"],["r2","Loan 2 interest rate (p.a.)",36,"%"],["m2","Loan 2 minimum payment",8000,"₹"],["b3","Loan 3 balance",500000,"₹"],["r3","Loan 3 interest rate (p.a.)",9,"%"],["m3","Loan 3 minimum payment",12000,"₹"],["extra","Extra you can pay every month",5000,"₹"]],
+  calc:f=>{ const L=[[f.b1,f.r1,f.m1],[f.b2,f.r2,f.m2],[f.b3,f.r3,f.m3]].map(([b,r,m],k)=>({k:k+1,b,r,m})).filter(x=>x.b>0);
+    if(!L.length) return {hero:["Debt-free in","—"],rows:[],note:"Enter at least one loan balance."};
+    const budget=L.reduce((s,x)=>s+x.m,0)+f.extra;
+    const sim=(order,roll)=>{ const s=L.map(x=>({...x})); let mo=0, int=0; const done=[];
+      while(s.some(x=>x.b>0.5) && mo<600){ mo++; s.forEach(x=>{ if(x.b>0.5){ const c=x.b*x.r/1200; x.b+=c; int+=c; } });
+        let avail=roll?budget:Infinity; s.forEach(x=>{ if(x.b>0.5){ const p=Math.min(x.m,x.b); x.b-=p; if(roll) avail-=p; } });
+        if(roll) for(const x of order(s)){ if(avail<=0) break; if(x.b>0.5){ const p=Math.min(avail,x.b); x.b-=p; avail-=p; } }
+        s.forEach(x=>{ if(x.b<=0.5 && !done.includes(x.k)) done.push(x.k); }); }
+      return {mo,int,done}; };
+    const av=sim(s=>[...s].sort((a,b)=>b.r-a.r),true), sn=sim(s=>[...s].sort((a,b)=>a.b-b.b),true), mn=sim(s=>s,false);
+    const ym=x=>x>=600?"More than 50 years":(()=>{const y=Math.floor(x/12),m=x%12;return `${y} ${y===1?"yr":"yrs"} ${m} ${m===1?"month":"months"}`})();
+    return {hero:["Debt-free with the avalanche method",ym(av.mo),"gain"],rows:[["Interest with avalanche (highest rate first)",av.mo>=600?"—":inr(av.int,0),"loss"],["Time with snowball (smallest balance first)",ym(sn.mo)],["Interest with snowball",sn.mo>=600?"—":inr(sn.int,0),"loss"],["Time paying only the minimums",ym(mn.mo)],["Interest paying only the minimums",mn.mo>=600?"—":inr(mn.int,0),"loss"],["Avalanche saves over snowball",inr(Math.max(0,sn.int-av.int),0),"gain"],["Avalanche payoff order",av.done.map(k=>"Loan "+k).join(" → ")]],
+      note:mn.mo>=600?"At least one minimum payment does not cover its interest, so paying only the minimums never clears the debt.":null}},
+  formula:"Every month, interest is added to each loan (balance × yearly rate ÷ 12) and its minimum payment is made. With the avalanche or snowball method, the extra amount goes to one target loan, and when a loan is cleared its minimum payment rolls over to the next target. Avalanche targets the highest interest rate first, which saves the most interest. Snowball targets the smallest balance first, which clears loans sooner and can help motivation. The minimum-only case pays each loan its own minimum with no extra and no roll-over."},
+ {id:"loan-foreclosure",group:"Loans & growth",ic:"FC",name:"Personal Loan Foreclosure Calculator",lede:"See how much you save by closing a personal loan early, after the foreclosure charge.",
+  zeroOk:["ch","gst"],
+  fields:[["p","Original loan amount",500000,"₹"],["r","Interest rate (p.a.)",12,"%"],["y","Original tenure",5,"years"],["k","EMIs already paid",18,"EMIs"],["ch","Foreclosure charge",4,"% of outstanding"],["gst","GST on the charge",18,"%"]],
+  calc:f=>{ const n=Math.round(f.y*12), k=Math.round(f.k), i=f.r/1200; if(k>=n) return {hero:["Net saving","—"],rows:[],note:"The EMIs already paid cover the whole tenure, so the loan is already closed."};
+    const emi=f.p*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1), out=f.p*Math.pow(1+i,k)-emi*((Math.pow(1+i,k)-1)/i), rest=emi*(n-k)-out, chg=out*f.ch/100*(1+f.gst/100), net=rest-chg;
+    return {hero:["Net saving from foreclosing now",inr(net,0),sign(net)],rows:[["EMI",inr(emi,0)],["Outstanding principal",inr(out,0)],["Interest you would still pay",inr(rest,0)],["Foreclosure charge with GST",inr(chg,0),chg>0?"loss":""],["Amount to pay now to close the loan",inr(out+chg,0)],["EMIs left",num(n-k,0)]],
+      note:net<0?"The charge is more than the interest you would save, so foreclosing now costs more than continuing.":null}},
+  formula:"EMI = P × i × (1 + i)<sup>n</sup> ÷ ((1 + i)<sup>n</sup> − 1). Outstanding after k EMIs = P × (1 + i)<sup>k</sup> − EMI × ((1 + i)<sup>k</sup> − 1) ÷ i. Interest still to pay = EMI × remaining EMIs − outstanding. Foreclosure charge = outstanding × charge %, plus GST on the charge. Net saving = interest still to pay − foreclosure charge. Lenders cannot charge foreclosure fees on floating-rate loans to individuals, but most personal loans are fixed-rate, so check your loan agreement."},
+ {id:"fd-premature",group:"Loans & growth",ic:"FP",name:"FD Premature Withdrawal Calculator",lede:"Find what you receive if you break a fixed deposit early, after the penalty.",
+  zeroOk:["pen"],
+  fields:[["p","Deposit amount",500000,"₹"],["br","Booked interest rate (p.a.)",7.25,"%"],["t","Booked tenure",3,"years"],["h","Months you have held it",18,"months"],["hr","Bank's rate for the period held",6.75,"%"],["pen","Premature withdrawal penalty",1,"%"]],
+  calc:f=>{ if(f.h>=f.t*12) return {hero:["Amount you receive","—"],rows:[],note:"You have held the deposit for its full tenure, so there is no premature withdrawal."};
+    const eff=Math.max(0,Math.min(f.br,f.hr)-f.pen), q=f.h/3, got=f.p*Math.pow(1+eff/400,q), would=f.p*Math.pow(1+f.br/400,q), mat=f.p*Math.pow(1+f.br/400,4*f.t);
+    return {hero:["Amount you receive",inr(got,0)],rows:[["Interest rate applied",pct(eff)],["Interest earned",inr(got-f.p,0),"gain"],["Interest lost by breaking early",inr(would-got,0),"loss"],["Maturity amount if you keep it",inr(mat,0)],["Extra you would get by waiting",inr(mat-got,0)]]}},
+  formula:"Banks usually pay the lower of the booked rate and the rate for the period you actually held the deposit, minus a penalty, often 0.5% to 1%. Interest is compounded quarterly for the months held: amount = P × (1 + rate ÷ 400)<sup>months ÷ 3</sup>. Interest lost is compared with what the booked rate would have paid for the same period. Penalties and rules vary by bank and deposit type, so check your bank's terms."},
+ {id:"rental-yield",group:"Loans & growth",ic:"RY",name:"Rental Yield Calculator",lede:"Work out the gross and net rental yield on a property.",
+  zeroOk:["vac","cost"],
+  fields:[["price","Property price",8000000,"₹"],["rent","Monthly rent",25000,"₹"],["vac","Months empty a year",1,"months"],["cost","Yearly costs (maintenance, property tax, insurance)",30000,"₹"]],
+  calc:f=>{ if(f.vac>12) return {hero:["Net rental yield","—"],rows:[],note:"A year has only 12 months."};
+    const gross=f.rent*12, net=f.rent*(12-f.vac)-f.cost, gy=gross/f.price*100, ny=net/f.price*100;
+    return {hero:["Net rental yield",pct(ny),sign(ny)],rows:[["Gross rental yield",pct(gy)],["Yearly rent (full occupancy)",inr(gross,0)],["Net rental income a year",inr(net,0),sign(net)],["Price-to-rent ratio",num(f.price/gross,1)+" years of rent"],["Years for net rent to equal the price",net>0?num(f.price/net,1):"—"]]}},
+  formula:"Gross rental yield = yearly rent ÷ property price. Net rental yield = (rent for the months let − yearly costs) ÷ property price. The price-to-rent ratio is how many years of rent equal the price. Tax on rental income, loan interest and any rise in the property's value are not included."},
  {id:"ssy",group:"Savings & salary",ic:"SS",name:"Sukanya Samriddhi Yojana Calculator",lede:"Estimate the tax-free maturity value of a Sukanya Samriddhi account for your daughter.",
   fields:[["d","Yearly deposit",150000,"₹"],["r","Interest rate (p.a.)",8.2,"%"],["age","Girl's age when the account is opened",5,"years"]],
   calc:f=>{ const dep=Math.min(f.d,150000); let b=0; for(let y=1;y<=21;y++){ if(y<=15) b+=dep; b*=1+f.r/100; } const inv=dep*15;

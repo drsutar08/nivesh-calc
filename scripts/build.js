@@ -77,6 +77,19 @@ function howTo(c) {
   return `<h2 style="margin-top:16px">How to use the ${esc(c.name)}</h2><p>Enter ${esc(inputs)}. The calculator updates as you type and shows ${esc(hero)}, along with the figures behind it. It runs in your browser, so nothing you enter is sent anywhere. Use the Reset button to go back to the example values.</p>`;
 }
 
+// Trust signals: a calculator whose content entry has "reviewed" (YYYY-MM-DD) and "sources" ([label, url] pairs) gets a byline,
+// a "Sources and review" section and author/dateModified/citation in its structured data.
+const AUTHOR = { name: "Diptiranjan Sutar", path: "about-us/" };
+const longDate = d => new Date(d + "T00:00:00Z").toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+const reviewOf = c => { const g = content[c.id]; return g && g.reviewed ? g : null; };
+const byline = c => { const g = reviewOf(c); return g ? `<p class="byline">By <a href="${AUTHOR.path}">${esc(AUTHOR.name)}</a><span class="sep" aria-hidden="true">·</span><span class="when">Last reviewed <time datetime="${g.reviewed}">${longDate(g.reviewed)}</time></span></p>` : ""; };
+function trust(c) {
+  const g = reviewOf(c); if (!g) return "";
+  const src = (g.sources || []).filter(([l, u]) => l && /^https:\/\//.test(u));
+  return `<h2 style="margin-top:16px" id="sources">Sources and review</h2><p>This calculator was last reviewed on <time datetime="${g.reviewed}">${longDate(g.reviewed)}</time> by <a href="${AUTHOR.path}">${esc(AUTHOR.name)}</a>, who checked its rates and rules against the official sources below. Rules can change, so check the latest official guidance before you act.</p>` +
+    (src.length ? `<ul class="ticks sources">${src.map(([l, u]) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a></li>`).join("")}</ul>` : "");
+}
+
 function guide(c) {
   const g = content[c.id]; if (!g) return "";
   return `<h2 style="margin-top:16px">${esc(g.heading)}</h2>${g.intro.map(p => `<p>${esc(p)}</p>`).join("")}<h3 class="faq-h">Frequently asked questions</h3>${g.faq.map(([q, a]) => `<h4 class="faq-q">${esc(q)}</h4><p>${esc(a)}</p>`).join("")}`;
@@ -103,7 +116,8 @@ function seo(c, isCalc) {
   const desc = c.id === "home" ? c.desc : isCalc ? `${c.lede} Free ${c.name.toLowerCase()} with instant results, a clear formula and no sign-up.` : `${c.lede} ${SITE_NAME}: free stock and investment calculators.`;
   const ld = [{
     "@context": "https://schema.org", "@type": isCalc ? "WebApplication" : "WebPage", name: c.name, url, description: c.lede,
-    ...(isCalc ? { applicationCategory: "FinanceApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, inLanguage: "en-IN" } : {})
+    ...(isCalc ? { applicationCategory: "FinanceApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, inLanguage: "en-IN" } : {}),
+    ...(reviewOf(c) ? { author: { "@type": "Person", name: AUTHOR.name, url: SITE + AUTHOR.path }, dateModified: reviewOf(c).reviewed, citation: (reviewOf(c).sources || []).map(s => s[1]) } : {})
   }, {
     "@context": "https://schema.org", "@type": "BreadcrumbList",
     itemListElement: [{ "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE }].concat(c.id === "home" ? [] : [{ "@type": "ListItem", position: 2, name: c.name, item: url }])
@@ -176,7 +190,14 @@ const lm = fs.existsSync(lmFile) ? JSON.parse(fs.readFileSync(lmFile, "utf8")) :
 const today = new Date().toISOString().slice(0, 10);
 const crypto = require("crypto");
 // lastmod only moves when a page's content really changes (a sitemap lastmod that changes daily gets ignored by Google).
-const stamp = (key, html) => { const h = crypto.createHash("md5").update(html).digest("hex"); if (!lm[key] || lm[key].h !== h) lm[key] = { h, d: today }; return lm[key].d; };
+// A page's lastmod moves only when its own content changes: its text, inputs, formula, calculation or example result.
+// Shared CSS/JS versions, navigation and ad code are left out, so a site-wide style change does not re-date every page.
+// Entries from the older whole-page hash keep their date the first time the new signature is recorded.
+const stamp = (key, sig) => { const s = crypto.createHash("md5").update(sig).digest("hex"), e = lm[key];
+  if (!e) lm[key] = { s, d: today }; else if (!e.s) { e.s = s; delete e.h; } else if (e.s !== s) { e.s = s; e.d = today; }
+  return lm[key].d; };
+const pageSig = (c, isCalc) => JSON.stringify([c.name, c.lede, c.html || "", c.formula || "", c.fields || c.lots || "", c.calc ? String(c.calc) : "", content[c.id] || "", isCalc ? prerender(c).result : ""]);
+const laterOf = (a, b) => (b && b > a ? b : a);
 const sitemap = [];
 let n = 0;
 [home(), ...all].forEach(c => {
@@ -193,7 +214,7 @@ let n = 0;
     .replace("{{FIELDS}}", () => isCalc ? prerender(c).fields : "").replace("{{RESULT}}", () => isCalc ? prerender(c).result : "")
     .replace("{{PAGEHIDDEN}}", isCalc ? " hidden" : "").replace("{{PAGEHTML}}", () => isCalc ? "" : c.html)
     .split("{{WORKHIDDEN}}").join(isCalc ? "" : " hidden")
-    .replace("{{FORMULA}}", () => isCalc ? c.formula : "").replace("{{HOWTO}}", () => isCalc ? guide(c) + howTo(c) : "")
+    .replace("{{FORMULA}}", () => isCalc ? c.formula : "").replace("{{HOWTO}}", () => isCalc ? guide(c) + howTo(c) + trust(c) : "").replace("{{BYLINE}}", () => isCalc ? byline(c) : "")
     .replace("{{RELATED}}", () => isCalc ? related(c) : "")
     .replace("{{AFFILIATE}}", () => isCalc ? affiliateBox(c) : "")
     .replace("{{AD1}}", () => isCalc ? adUnit() : "").replace("{{AD2}}", () => isCalc ? adUnit("wide") : "").replace("{{AD3}}", () => isCalc ? netBox() : "")
@@ -202,7 +223,7 @@ let n = 0;
   const out = c.id === "home" ? path.join(root, "index.html") : path.join(root, pathOf(c), "index.html");
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, html); n++;
-  sitemap.push([urlOf(c), stamp(c.id, html)]);
+  sitemap.push([urlOf(c), laterOf(stamp(c.id, pageSig(c, isCalc)), (reviewOf(c) || {}).reviewed)]);
 });
 
 // Guides
@@ -222,7 +243,7 @@ const guideSeo = (title, desc, url, ld) => `<title>${esc(title)} | ${SITE_NAME}<
 <meta name="twitter:description" content="${esc(desc)}">
 <meta name="twitter:image" content="${OG_IMAGE}">
 <script type="application/ld+json">${JSON.stringify(ld)}</script>`;
-const writeGuide = (dir, html, key, url) => { const out = path.join(root, dir, "index.html"); fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, html); n++; sitemap.push([url, stamp(key, html)]); };
+const writeGuide = (dir, html, key, url, sig) => { const out = path.join(root, dir, "index.html"); fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, html); n++; sitemap.push([url, stamp(key, sig)]); };
 // A guide paragraph is shown as a formula box only when it reads "Name = expression" and is a single statement, not prose.
 const isFormula = p => /^[A-Za-z ]+ = /.test(p) && !/[.!?]\s+[A-Z]/.test(p) && p.length <= 120;
 guides.forEach(g => {
@@ -235,14 +256,14 @@ ${netBox()}<section class="howto related"><h2>More guides</h2><ul class="ticks">
   const ld = [{ "@context": "https://schema.org", "@type": "Article", headline: g.title, description: g.desc, url, dateModified: g.updated, datePublished: g.updated, inLanguage: "en-IN", mainEntityOfPage: url, image: OG_IMAGE, author: { "@type": "Person", name: "Diptiranjan Sutar", url: SITE + "about-us/" }, publisher: { "@type": "Organization", name: SITE_NAME, url: SITE, logo: { "@type": "ImageObject", url: SITE + "images/icon-512.png" } } },
     { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE }, { "@type": "ListItem", position: 2, name: "Guides", item: SITE + "guides/" }, { "@type": "ListItem", position: 3, name: g.title, item: url }] },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: g.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) }];
-  writeGuide("guides/" + g.slug, guideTemplate.replace("{{BASEHREF}}", "../../").replace("{{SEO}}", () => guideSeo(g.title, g.desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? adLoader() : "").replace("{{ANALYTICS}}", () => analytics).replace("{{BODY}}", () => body), "guide:" + g.slug, url);
+  writeGuide("guides/" + g.slug, guideTemplate.replace("{{BASEHREF}}", "../../").replace("{{SEO}}", () => guideSeo(g.title, g.desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? adLoader() : "").replace("{{ANALYTICS}}", () => analytics).replace("{{BODY}}", () => body), "guide:" + g.slug, url, JSON.stringify(g));
 });
 {
   const url = SITE + "guides/", title = "Investing Guides for India", desc = "Plain-language guides on SIPs, lumpsum investing, capital gains tax and retirement planning, each linked to a free calculator.";
   const body = `<header><p class="gmeta"><a href="./">Nivesh Calc</a></p><h1>${title}</h1><p class="lede">${desc}</p></header>` +
     guides.map(g => `<a class="gcard" href="guides/${g.slug}/"><b>${esc(g.title)}</b><span>${esc(g.desc)}</span></a>`).join("") + adUnit("wide");
   const ld = [{ "@context": "https://schema.org", "@type": "CollectionPage", name: title, url, description: desc }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE }, { "@type": "ListItem", position: 2, name: "Guides", item: url }] }];
-  writeGuide("guides", guideTemplate.replace("{{BASEHREF}}", "../").replace("{{SEO}}", () => guideSeo(title, desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? adLoader() : "").replace("{{ANALYTICS}}", () => analytics).replace("{{BODY}}", () => body), "guides-index", url);
+  writeGuide("guides", guideTemplate.replace("{{BASEHREF}}", "../").replace("{{SEO}}", () => guideSeo(title, desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? adLoader() : "").replace("{{ANALYTICS}}", () => analytics).replace("{{BODY}}", () => body), "guides-index", url, JSON.stringify(guides.map(x => [x.slug, x.title, x.desc])));
 }
 // 404 page: Cloudflare Pages serves /404.html with a real 404 status for any missing URL. Links resolve from the site root
 // because it can be shown at any depth; noindex and no canonical, and it is not in the sitemap.
@@ -258,7 +279,7 @@ ${netBox()}<section class="howto related"><h2>More guides</h2><ul class="ticks">
     .replace("{{SUPPORT}}", () => { const k = all.find(x => x.id === "coffee"); return `<div class="support"><a href="${pathOf(k)}" data-id="coffee"><span class="ic">${esc(k.ic)}</span><span class="lb">${esc(k.name)}</span></a></div>`; })
     .replace("{{H1}}", () => esc(nf.name)).replace("{{LEDE}}", () => esc(nf.lede)).replace("{{BODYCLASS}}", "").replace("{{CRUMB}}", "")
     .replace("{{FIELDS}}", "").replace("{{RESULT}}", "").replace("{{PAGEHIDDEN}}", "").replace("{{PAGEHTML}}", () => nf.html).split("{{WORKHIDDEN}}").join(" hidden")
-    .replace("{{FORMULA}}", "").replace("{{HOWTO}}", "").replace("{{RELATED}}", "").replace("{{AFFILIATE}}", "")
+    .replace("{{FORMULA}}", "").replace("{{HOWTO}}", "").replace("{{BYLINE}}", "").replace("{{RELATED}}", "").replace("{{AFFILIATE}}", "")
     .replace("{{AD1}}", "").replace("{{AD2}}", "").replace("{{AD3}}", "")
     .replace("{{ADSCRIPT}}", () => AD_CLIENT ? adLoader() : "");
   fs.writeFileSync(path.join(root, "404.html"), html); n++;

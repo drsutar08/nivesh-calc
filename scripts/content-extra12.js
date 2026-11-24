@@ -1,6 +1,12 @@
 // Explainer text for the income tax calculator. The example names the financial year because tax rates change with each Budget.
 module.exports = {
   "income-tax": {
+    reviewed: "2026-11-25",
+    sources: [
+      ["Computation of tax for individuals (Income Tax Department)", "https://wm.incometaxindia.gov.in/w/computation-of-tax-for-individual-1"],
+      ["Rebate under section 87A (Income Tax Department)", "https://wm.incometaxindia.gov.in/w/what-is-rebate-under-section-87a-for-f.y-2025-26-and-who-can-claim-it-"],
+      ["No income tax on income up to ₹12 lakh under the new regime (Press Information Bureau)", "https://www.pib.gov.in/PressReleaseIframePage.aspx?PRID=2098406"]
+    ],
     heading: "Old vs new tax regime: which one should you choose?",
     intro: [
       "Individuals in India can choose between two ways of calculating income tax. The new regime is the default. It has lower slab rates and a larger rebate, but it allows very few deductions. The old regime has higher rates but lets you subtract deductions such as 80C investments, health insurance, HRA and home loan interest. Which one costs less depends on how much you can claim in deductions.",

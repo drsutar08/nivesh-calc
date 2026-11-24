@@ -284,6 +284,15 @@ body.cat-page .wrap>header .lede{color:rgba(255,255,255,.92)}
 .hb .hb-cats a{color:#fff;font-weight:700;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(255,255,255,.5)}
 .hb .hb-cats a:hover{text-decoration-color:#fff}
 @media (max-width:560px){body.cat-page .wrap>header{padding:20px;border-radius:20px}}
+/* Trust signals: byline in the calculator banner and the sources list */
+.byline{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:12px 0 0;font-size:13px;font-weight:600;color:var(--muted)}
+body.cat-page .wrap>header .byline{color:rgba(255,255,255,.92)}
+body.cat-page .wrap>header .byline a{color:#fff;text-decoration:underline;text-underline-offset:3px}
+.byline .sep{opacity:.6}
+.byline .when{white-space:nowrap}
+.howto .sources{margin-top:8px}
+.howto .sources li{color:var(--muted)}
+.howto .sources li::before{content:"↗"}
 
 /* Responsive: input fields go two-up when the inputs panel is wide (tablets, small laptops); one column on phones and beside the result on desktop */
 #form{container-type:inline-size}

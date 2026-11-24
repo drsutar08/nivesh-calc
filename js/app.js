@@ -184,6 +184,15 @@ const CALCS = [
     return {hero:["Expectancy per trade",inr(e,0),sign(e)],rows:[["Risk : reward",`1 : ${num(R,2)}`],["Win rate needed to break even",pct(be),f.wr>=be?"gain":"loss"],["Expectancy in R (multiples of risk)",num(eR,2)+"R",sign(eR)],["Expected result over 100 trades",inr(e*100,0),sign(e)],["Loss on a losing trade",inr(risk*f.q,0),"loss"],["Profit on a winning trade",inr(rew*f.q,0),"gain"]],
       note:e<0?"At this win rate the strategy loses money over time. Improve the win rate or the risk-reward.":null}},
   formula:"Risk per share = entry − stop-loss and reward per share = target − entry, so R = reward ÷ risk. Expectancy (in R) = win rate × R − (1 − win rate). Expectancy per trade = expectancy in R × risk per share × quantity. Break-even win rate = 1 ÷ (1 + R). Brokerage, charges and slippage are not included and lower the real expectancy."},
+ {id:"sell-or-wait",group:"Stocks",ic:"SW",name:"Sell Now or Wait Calculator",lede:"See whether holding shares past 12 months for lower long-term tax is worth the price risk.",
+  zeroOk:["ex"],
+  fields:[["q","Quantity",100,"units"],["buy","Buy price",1000,"₹"],["now","Current price",1500,"₹"],["m","Months held so far",10,"months"],["st","Short-term capital gains tax rate",20,"%"],["lt","Long-term capital gains tax rate",12.5,"%"],["ex","Long-term exemption left this year",125000,"₹"]],
+  calc:f=>{ const g=(f.now-f.buy)*f.q; if(g<=0) return {hero:["Tax saved by waiting","₹0"],rows:[],note:"There is no gain to tax at the current price, so holding period makes no difference to tax."};
+    if(f.m>=12) return {hero:["Tax saved by waiting","—"],rows:[["Tax if you sell now (long-term)",inr(Math.max(0,g-f.ex)*f.lt/100,0)]],note:"You have already held the shares for 12 months or more, so a sale now is a long-term gain."};
+    const tn=g*f.st/100, tw=Math.max(0,g-f.ex)*f.lt/100, netNow=f.q*f.now-tn, net=p=>f.q*p-Math.max(0,(p-f.buy)*f.q-f.ex)*f.lt/100*((p>f.buy)?1:0);
+    let lo=0, hi=f.now; for(let k=0;k<100;k++){const mid=(lo+hi)/2; if(net(mid)>netNow) hi=mid; else lo=mid;} const p=(lo+hi)/2;
+    return {hero:["Tax saved by waiting",inr(tn-tw,0),"gain"],rows:[["Tax if you sell now (short-term)",inr(tn,0),"loss"],["Tax if you sell after 12 months at the same price",inr(tw,0)],["Months left to become long-term",num(12-f.m,0)+" (a little over)"],["Price can fall to, before waiting stops paying",inr(p)],["That is a fall of",pct((f.now-p)/f.now*100),"loss"],["What you keep if you sell now",inr(netNow,0)]]}},
+  formula:"Shares held for 12 months or less are taxed as a short-term gain, and longer holdings as a long-term gain with a yearly exemption. Tax saved by waiting = short-term tax now − long-term tax after 12 months, at today's price. The break-even price is the price after 12 months at which what you keep after tax equals what you keep by selling now. The default rates and exemption are those for listed equity at the time of writing. Check the current rules."},
  {id:"sip",group:"Mutual funds",ic:"↻",name:"SIP Calculator",lede:"Estimate what a monthly investment grows to over time.",
   fields:[["p","Monthly investment",10000,"₹"],["r","Expected return (p.a.)",12,"%"],["y","Duration",15,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12, fv= i? f.p*((Math.pow(1+i,n)-1)/i)*(1+i) : f.p*n, inv=f.p*n;
@@ -332,6 +341,28 @@ const CALCS = [
   calc:f=>{ const duty=f.a*f.sd/100, net=f.a-duty, u=net/f.nav;
     return {hero:["Units allotted",num(u,3)],rows:[["Stamp duty",inr(duty)],["Amount invested after stamp duty",inr(net)],["Value of the units at this NAV",inr(u*f.nav)],[`Value if the NAV rises 10% to ${inr(f.nav*1.1)}`,inr(u*f.nav*1.1)]]}},
   formula:"Units = (amount − stamp duty) ÷ NAV, usually rounded to 3 decimal places. Stamp duty applies to mutual fund purchases, including SIP instalments, but not to redemptions. The NAV used depends on when your money reaches the fund, which can be a day or more after you pay. The default stamp duty is the rate at the time of writing."},
+ {id:"required-return",group:"Mutual funds",ic:"RQ",name:"Required Return Calculator",lede:"Find the yearly return you need to reach a target amount.",
+  zeroOk:["now","sip"],
+  fields:[["now","Amount invested today",500000,"₹"],["sip","Monthly SIP",10000,"₹"],["goal","Target amount",5000000,"₹"],["y","Years",10,"years"]],
+  calc:f=>{ const n=Math.round(f.y*12), inv=f.now+f.sip*n; if(f.now<=0&&f.sip<=0) return {hero:["Return needed (p.a.)","—"],rows:[],note:"Enter an amount invested today, a monthly SIP, or both."};
+    if(inv>=f.goal) return {hero:["Return needed (p.a.)","0% or less","gain"],rows:[["Total you invest",inr(inv,0)]],note:"What you invest already adds up to the target, so you need no growth at all."};
+    const fv=r=>{const i=r/1200; return f.now*Math.pow(1+i,n)+(i?f.sip*((Math.pow(1+i,n)-1)/i)*(1+i):f.sip*n)};
+    let lo=0, hi=200; for(let k=0;k<200;k++){const mid=(lo+hi)/2; if(fv(mid)>f.goal) hi=mid; else lo=mid;} const r=(lo+hi)/2;
+    return {hero:["Return needed (p.a.)",pct(r)],rows:[["Total you invest",inr(inv,0)],["Growth needed",inr(f.goal-inv,0)],["Growth as a share of the target",pct((f.goal-inv)/f.goal*100)]],
+      note:r>15?"That is a high return to expect for many years. Consider investing more, giving it more time, or lowering the target.":null}},
+  formula:"The required return is the yearly rate r at which today's amount, compounded monthly, plus the SIP, reaches the target: target = amount × (1 + i)<sup>n</sup> + SIP × [((1 + i)<sup>n</sup> − 1) ÷ i] × (1 + i), where i = r ÷ 12 and n is the number of months. It is found by trial until both sides match."},
+ {id:"rupee-cost-averaging",group:"Mutual funds",ic:"RC",name:"Rupee Cost Averaging Calculator",lede:"See how a fixed monthly investment buys more units when prices fall, using six months of NAVs.",
+  fields:[["a","Amount invested each month",5000,"₹"],["n1","NAV in month 1",100,"₹"],["n2","NAV in month 2",90,"₹"],["n3","NAV in month 3",80,"₹"],["n4","NAV in month 4",95,"₹"],["n5","NAV in month 5",110,"₹"],["n6","NAV in month 6",105,"₹"]],
+  calc:f=>{ const navs=[f.n1,f.n2,f.n3,f.n4,f.n5,f.n6], u=navs.map(v=>f.a/v), tu=u.reduce((s,x)=>s+x,0), inv=f.a*6, ac=inv/tu, an=navs.reduce((s,x)=>s+x,0)/6, val=tu*f.n6;
+    return {hero:["Your average cost per unit",inr(ac)],rows:[["Average NAV over the six months",inr(an)],["Your cost is lower by",pct((an-ac)/an*100),"gain"],["Total units bought",num(tu,3)],["Most units bought in a month",`${num(Math.max(...u),3)} (at ${inr(Math.min(...navs))})`],["Total invested",inr(inv,0)],["Value at the last NAV",inr(val,0),sign(val-inv)]]}},
+  formula:"Each month, units bought = amount ÷ NAV, so a lower NAV buys more units. Average cost per unit = total invested ÷ total units. Because more units are bought when the price is low, this average cost is never higher than the simple average of the NAVs, and it is lower whenever the NAV moves. Averaging does not guarantee a profit if prices keep falling."},
+ {id:"swp-inflation",group:"Mutual funds",ic:"IS",name:"Inflation-Adjusted SWP Calculator",lede:"See how long a corpus lasts when your monthly withdrawal rises with inflation every year.",
+  fields:[["c","Corpus",10000000,"₹"],["w","Monthly withdrawal in the first year",50000,"₹"],["s","Yearly increase in the withdrawal",6,"%"],["r","Expected return (p.a.)",9,"%"]],
+  calc:f=>{ const i=f.r/1200, run=step=>{ let b=f.c, w=f.w, k=0, tot=0, last=w; while(k<1200){ if(k>0&&k%12===0) w*=1+step/100; if(b<w){ tot+=b; b=0; k++; break; } b-=w; tot+=w; last=w; b*=1+i; k++; } return {k,tot,last,left:b}; };
+    const a=run(f.s), fx=run(0), ym=x=>x>=1200?"More than 100 years":(()=>{const y=Math.floor(x/12),m=x%12;return `${y} ${y===1?"yr":"yrs"} ${m} ${m===1?"month":"months"}`})();
+    return {hero:["Corpus lasts",ym(a.k),a.k>=360?"gain":"loss"],rows:[["Total withdrawn",inr(a.tot,0)],["Monthly withdrawal in the last full year",inr(a.last,0)],["Corpus lasts with a fixed withdrawal instead",ym(fx.k)],["Withdrawal rate in the first year",pct(f.w*12/f.c*100)]],
+      note:a.k>=1200?"At these figures the corpus keeps growing faster than you withdraw.":null}},
+  formula:"Each month the withdrawal is taken out and the rest grows at the expected monthly return (yearly return ÷ 12). Every 12 months the withdrawal rises by the yearly increase, to keep up with inflation. The corpus lasts until a month's withdrawal can no longer be paid in full. The result is compared with keeping the withdrawal fixed. Tax on withdrawals is not included."},
  {id:"emi",group:"Loans & growth",ic:"≡",name:"EMI Calculator",lede:"Find the monthly instalment and total interest on a loan.",
   fields:[["p","Loan amount",3000000,"₹"],["r","Interest rate (p.a.)",8.5,"%"],["y","Tenure",20,"years"]],
   calc:f=>{const i=f.r/1200,n=f.y*12,e= i? f.p*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1) : f.p/n,tot=e*n;
@@ -512,6 +543,13 @@ const CALCS = [
     return {hero:[d>=0?"Investing ends ahead by":"Prepaying ends ahead by",inr(Math.abs(d),0)],rows:[["Value of prepaying (interest saved, compounded)",inr(pre,0)],["Investment value after tax",inr(inv,0)],["Guaranteed return from prepaying",pct(f.lr)],["Investment return after tax (p.a.)",pct(ar)],["Break-even investment return before tax",(()=>{let lo=0,hi=100;for(let k=0;k<100;k++){const m=(lo+hi)/2,g=f.a*Math.pow(1+m/100,f.y),v=g-(g-f.a)*f.tax/100;if(v>pre)hi=m;else lo=m;}return pct((lo+hi)/2)})()]],
       note:"Prepaying gives a guaranteed return equal to the loan rate. Investing may earn more but can also earn less, so compare the gap with the risk you are taking."}},
   formula:"Prepaying saves interest at the loan rate, so it works like a guaranteed investment growing at that rate: amount × (1 + loan rate)<sup>years</sup>. Investing grows at the expected return, and tax is taken off the gain at the end: amount × (1 + return)<sup>years</sup>, minus tax on the gain. Tax benefits on home loan interest are not included and would lower the effective loan rate."},
+ {id:"loan-against-fd",group:"Loans & growth",ic:"LF",name:"Loan Against FD Calculator",lede:"Compare borrowing against your fixed deposit with breaking it early.",
+  zeroOk:["pen","held"],
+  fields:[["fd","Fixed deposit amount",500000,"₹"],["fr","FD interest rate (p.a.)",7,"%"],["ltv","Share of the FD you can borrow",90,"%"],["need","Amount you need",300000,"₹"],["sp","Loan rate above the FD rate",1,"%"],["m","Months you need the money for",6,"months"],["pen","Premature withdrawal penalty",1,"%"],["held","Months the FD has run so far",12,"months"]],
+  calc:f=>{ const max=f.fd*f.ltv/100, lr=f.fr+f.sp, int=f.need*lr/100*f.m/12, net=f.need*f.sp/100*f.m/12, brk=f.fd*f.pen/100*f.held/12;
+    return {hero:[net<=brk?"Borrowing costs less, saving":"Breaking the FD costs less, saving",inr(Math.abs(brk-net),0),"gain"],rows:[["Most you can borrow",inr(max,0)],["Loan interest rate",pct(lr)],["Interest on the loan",inr(int,0),"loss"],["Net cost of the loan (the FD keeps earning)",inr(net,0),"loss"],["Penalty if you break the FD now",inr(brk,0),"loss"]],
+      note:f.need>max?"You need more than you can borrow against this FD.":null}},
+  formula:"A loan or overdraft against an FD usually costs the FD rate plus 1% to 2%, and your FD keeps earning interest meanwhile, so the real cost is roughly the gap: amount × extra rate × months ÷ 12. Breaking the FD instead usually cuts the rate on the whole deposit by the penalty for the time it has already run: FD × penalty × months held ÷ 12. This is an estimate. Banks also differ in whether they apply the rate for the shorter period, which can make breaking the FD costlier."},
  {id:"ssy",group:"Savings & salary",ic:"SS",name:"Sukanya Samriddhi Yojana Calculator",lede:"Estimate the tax-free maturity value of a Sukanya Samriddhi account for your daughter.",
   fields:[["d","Yearly deposit",150000,"₹"],["r","Interest rate (p.a.)",8.2,"%"],["age","Girl's age when the account is opened",5,"years"]],
   calc:f=>{ const dep=Math.min(f.d,150000); let b=0; for(let y=1;y<=21;y++){ if(y<=15) b+=dep; b*=1+f.r/100; } const inv=dep*15;
@@ -597,6 +635,13 @@ const CALCS = [
     const notes=[]; if(f.sal>15000) notes.push("Pensionable salary is capped at ₹15,000 a month unless you opted for a pension on higher wages.");
     return {hero:["Monthly pension",inr(p,0),"gain"],rows:[["Pensionable service counted",num(cnt,0)+" years"],["Bonus years for 20 or more years of service",num(wt,0)],["Yearly pension",inr(p*12,0)],["Minimum pension applied",f.sal*cnt/70<1000?"Yes":"No"]],note:notes.join(" ")||null}},
   formula:"Monthly pension = pensionable salary × pensionable service ÷ 70. Pensionable salary is the average salary of the last 60 months, capped at ₹15,000 for most members. Service of more than 6 months in a year counts as a full year, and 2 bonus years are added for 20 or more years of service. A minimum pension of ₹1,000 a month applies. The pension usually starts at 58. The cap and minimum are the figures at the time of writing."},
+ {id:"notice-buyout",group:"Savings & salary",ic:"NP",name:"Notice Period Buyout Calculator",lede:"Work out what it costs to leave a job before serving the full notice period.",
+  zeroOk:["served"],
+  fields:[["sal","Monthly salary used for the buyout",80000,"₹"],["notice","Notice period",90,"days"],["served","Days already served",30,"days"],["div","Days counted in a month",30,"days"]],
+  calc:f=>{ if(f.served>=f.notice) return {hero:["Buyout amount","₹0","gain"],rows:[],note:"You have served the full notice period, so there is nothing to buy out."};
+    const day=f.sal/f.div, left=f.notice-f.served;
+    return {hero:["Buyout amount",inr(day*left,0),"loss"],rows:[["Days left to buy out",num(left,0)],["Salary per day",inr(day,0)],["Notice left in months",num(left/f.div,1)]]}},
+  formula:"Buyout = (monthly salary ÷ days counted in a month) × notice days left. Whether the employer uses basic pay or gross salary, and 30 or 26 days, depends on your contract, so check your offer letter. The amount is usually deducted from your final settlement, or a new employer may agree to pay it."},
  {id:"percentage",group:"Everyday",ic:"%",name:"Percentage Calculator",lede:"Three common percentage questions, answered at once.",
   fields:[["a","Value A",25,""],["b","Value B",480,""]],
   calc:f=>{const ch=(f.b-f.a)/f.a*100;
@@ -680,7 +725,22 @@ const CALCS = [
   fields:[["d","Amount spent each time",200,"₹"],["w","Times a week",5,"times"],["y","Years",20,"years"],["r","Return if invested instead (p.a.)",12,"%"]],
   calc:f=>{ const yr=f.d*f.w*52, mo=yr/12, n=Math.round(f.y*12), i=f.r/1200, fv=mo*((Math.pow(1+i,n)-1)/i)*(1+i);
     return {hero:["Could grow to, if invested",inr(fv,0),"gain"],rows:[["Spent a year",inr(yr,0)],["Spent a month",inr(mo,0)],[`Spent over ${num(f.y,0)} years`,inr(yr*f.y,0)],["Growth you would miss",inr(fv-yr*f.y,0)]],bar:[yr*f.y,fv-yr*f.y],barLabels:["Spent","Growth"]}},
-  formula:"Yearly spend = amount × times a week × 52, and monthly spend = yearly spend ÷ 12. If that monthly amount were invested as a SIP instead, its value = P × [((1 + i)<sup>n</sup> − 1) ÷ i] × (1 + i), where i is the monthly rate and n is the number of months. Returns are assumed to be steady."}
+  formula:"Yearly spend = amount × times a week × 52, and monthly spend = yearly spend ÷ 12. If that monthly amount were invested as a SIP instead, its value = P × [((1 + i)<sup>n</sup> − 1) ÷ i] × (1 + i), where i is the monthly rate and n is the number of months. Returns are assumed to be steady."},
+ {id:"policy-irr",group:"Everyday",ic:"PI",name:"Insurance Policy Return Calculator",lede:"Find the real yearly return (IRR) on an endowment or money-back policy.",
+  fields:[["p","Yearly premium",50000,"₹"],["py","Years you pay the premium",20,"years"],["t","Policy term (maturity after)",25,"years"],["mat","Maturity amount, with bonuses",2000000,"₹"],["alt","Return of an alternative, such as PPF (p.a.)",7.1,"%"]],
+  calc:f=>{ const py=Math.round(f.py), t=Math.round(f.t); if(py>t) return {hero:["Return on the policy (IRR)","—"],rows:[],note:"The premium-paying years cannot be more than the policy term."};
+    const fv=r=>{let s=0; for(let k=0;k<py;k++) s+=f.p*Math.pow(1+r,t-k); return s}; let lo=-0.99, hi=1; for(let k=0;k<200;k++){const m=(lo+hi)/2; if(fv(m)>f.mat) hi=m; else lo=m;}
+    const irr=(lo+hi)/2*100, tot=f.p*py, alt=fv(f.alt/100);
+    return {hero:["Return on the policy (IRR)",pct(irr),irr<f.alt?"loss":"gain"],rows:[["Total premiums paid",inr(tot,0)],["Maturity amount",inr(f.mat,0)],["Gain over premiums",inr(f.mat-tot,0),sign(f.mat-tot)],[`The same premiums at ${pct(f.alt,1)} would grow to`,inr(alt,0)],["Difference",inr(f.mat-alt,0),sign(f.mat-alt)]],
+      note:irr<f.alt?"The policy returns less than the alternative. Many people buy a term plan for cover and invest the rest separately.":null}},
+  formula:"Each yearly premium is paid at the start of the year, and the maturity amount is received at the end of the term. The IRR is the yearly rate r at which the premiums, grown at r to maturity, equal the maturity amount. It is found by trial. The alternative compounds the same premiums at its rate over the same period. Life cover and any survival benefits paid during the term are not included."},
+ {id:"ev-vs-petrol",group:"Everyday",ic:"EV",name:"EV vs Petrol Car Calculator",lede:"Compare running costs and see how long an electric car takes to repay its higher price.",
+  zeroOk:["ms"],
+  fields:[["km","Distance driven per month",1500,"km"],["pp","Petrol price",105,"₹ per litre"],["mil","Petrol car mileage",15,"km per litre"],["er","Electricity cost",8,"₹ per kWh"],["eff","EV efficiency",7,"km per kWh"],["diff","Extra price of the EV",300000,"₹"],["ms","Maintenance saving with the EV",8000,"₹ a year"]],
+  calc:f=>{ const pm=f.km/f.mil*f.pp, em=f.km/f.eff*f.er, ys=(pm-em)*12+f.ms;
+    return {hero:["Payback period",ys>0?num(f.diff/ys,1)+" years":"Never","gain"],rows:[["Petrol cost per month",inr(pm,0)],["Charging cost per month",inr(em,0)],["Running cost per km (petrol / EV)",`${inr(f.pp/f.mil)} / ${inr(f.er/f.eff)}`],["Saving per year, with maintenance",inr(ys,0),sign(ys)],["Net saving over 8 years",inr(ys*8-f.diff,0),sign(ys*8-f.diff)]],
+      note:ys<=0?"At these figures the EV does not cost less to run, so it never repays its higher price.":null}},
+  formula:"Petrol cost = distance ÷ mileage × petrol price. Charging cost = distance ÷ EV efficiency × electricity cost. Yearly saving = 12 × (petrol cost − charging cost) + maintenance saving. Payback = extra price of the EV ÷ yearly saving. Insurance, resale value, battery replacement and any loan interest are not included, and home charging is usually cheaper than public charging."}
 ];
 
 

@@ -17,7 +17,11 @@ const AD_CLIENT = customAds.off ? "" : PUB;
 const AD_WIDE_SLOT = process.env.ADSENSE_SLOT_WIDE || customAds.slotIdWide || ""; // horizontal banner unit ID
 // Second ad network, fixed 300x250 iframe banner. Set in ads.json: "net300": {"key": "...", "host": "https://host.example"}; remove it to turn it off.
 const net = customAds.net300 || {};
-const netBox = () => net.key && String(net.host || "").startsWith("https://") && !customAds.off ? `<div class="adx"><script>atOptions={'key':'${net.key}','format':'iframe','height':250,'width':300,'params':{}};</script><script src="${net.host}/22/${net.key}"></script></div>` : "";
+const netBox = () => net.key && String(net.host || "").startsWith("https://") && !customAds.off ? `<div class="adx" data-key="${esc(net.key)}" data-host="${esc(net.host)}"></div>` : "";
+// Ads load after the page is usable, so they never slow the first paint or block taps: on the first scroll, tap,
+// key press or mouse move, or 3 seconds after the load event. AdSense ad units queue their push() calls until the script arrives.
+// The second network's ad goes in its own iframe, because its script uses document.write.
+const adLoader = () => AD_CLIENT || net.key ? `<script>(function(){var d=0,E=["scroll","pointerdown","keydown","touchstart","mousemove"];function go(){if(d)return;d=1;E.forEach(function(e){removeEventListener(e,go,true)});${AD_CLIENT ? `var s=document.createElement("script");s.async=true;s.crossOrigin="anonymous";s.src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}";document.head.appendChild(s);` : ""}document.querySelectorAll(".adx[data-key]").forEach(function(x){var f=document.createElement("iframe");f.width=300;f.height=250;f.title="Advertisement";f.setAttribute("scrolling","no");f.style.border="0";f.srcdoc='<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0}</style></head><body><script>atOptions={key:"'+x.dataset.key+'",format:"iframe",height:250,width:300,params:{}};<\\/script><script src="'+x.dataset.host+'/22/'+x.dataset.key+'"><\\/script></body></html>';x.appendChild(f);var t=0,iv=setInterval(function(){t++;try{var c=f.contentDocument;if(c&&c.querySelector("iframe,img,ins,object,embed")){x.classList.add("on");clearInterval(iv)}}catch(e){clearInterval(iv)}if(t>40)clearInterval(iv)},500)})}E.forEach(function(e){addEventListener(e,go,{capture:true,passive:true,once:true})});addEventListener("load",function(){setTimeout(go,3000)})})()</script>` : "";
 const adUnit = (kind) => {
   const wide = kind === "wide" && AD_WIDE_SLOT, slot = wide ? AD_WIDE_SLOT : AD_SLOT;
   if (!AD_CLIENT && customAds.slot) return `<div class="ad"><small>Advertisement</small>${customAds.slot}</div>`;
@@ -27,8 +31,11 @@ const adUnit = (kind) => {
 
 // Load the calculator definitions straight from js/app.js (everything before the UI code).
 const src = fs.readFileSync(path.join(root, "js/app.js"), "utf8");
-const head = src.slice(0, src.indexOf("const LOT_COLORS"));
-const { CALCS, PAGES, pathOf, slugOf } = new Function(head + "; return {CALCS,PAGES,pathOf,slugOf};")();
+const head = src.slice(0, src.indexOf("/* ==== UI: everything below needs a browser ==== */"));
+const { CALCS, PAGES, pathOf, slugOf, fieldsHTML, lotsHTML, resultFor, resultHTML } = new Function(head + "; return {CALCS,PAGES,pathOf,slugOf,fieldsHTML,lotsHTML,resultFor,resultHTML};")();
+// Pre-render a calculator's inputs and its example result, exactly as js/app.js draws them on load.
+const prerender = c => { try { const vals = c.lots ? c.lots.map(l => [...l]) : Object.fromEntries(c.fields.map(x => [x[0], parseFloat(x[2])]));
+  return { fields: c.lots ? lotsHTML(vals) : fieldsHTML(c, {}), result: resultHTML(resultFor(c, vals)) }; } catch (e) { console.warn("pre-render failed for " + c.id + ": " + e.message); return { fields: "", result: "" }; } };
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const content = Object.assign({}, require("./content.js"), require("./content-more.js"), require("./content-extra.js"), require("./content-extra2.js"), require("./content-extra3.js"), require("./content-extra4.js"), require("./content-extra5.js"), require("./content-extra6.js"), require("./content-extra7.js"), require("./content-extra8.js"), require("./content-extra9.js"), require("./content-extra10.js"), require("./content-extra11.js"), require("./content-extra12.js"));
 const affFile = process.env.AFFILIATES_FILE || path.join(__dirname, "affiliates.json");
@@ -183,13 +190,14 @@ let n = 0;
     .replace("{{H1}}", () => esc(c.name)).replace("{{LEDE}}", () => esc(c.lede))
     .replace("{{BODYCLASS}}", isCalc ? ` class="cat-page t-${catKey(c.group)}"` : "")
     .replace("{{CRUMB}}", () => isCalc ? `<p class="crumb"><a href="./">Home</a><span aria-hidden="true">›</span><a href="./#cat-${slugOf(c.group)}">${esc(c.group)}</a></p>` : "")
+    .replace("{{FIELDS}}", () => isCalc ? prerender(c).fields : "").replace("{{RESULT}}", () => isCalc ? prerender(c).result : "")
     .replace("{{PAGEHIDDEN}}", isCalc ? " hidden" : "").replace("{{PAGEHTML}}", () => isCalc ? "" : c.html)
     .split("{{WORKHIDDEN}}").join(isCalc ? "" : " hidden")
     .replace("{{FORMULA}}", () => isCalc ? c.formula : "").replace("{{HOWTO}}", () => isCalc ? guide(c) + howTo(c) : "")
     .replace("{{RELATED}}", () => isCalc ? related(c) : "")
     .replace("{{AFFILIATE}}", () => isCalc ? affiliateBox(c) : "")
     .replace("{{AD1}}", () => isCalc ? adUnit() : "").replace("{{AD2}}", () => isCalc ? adUnit("wide") : "").replace("{{AD3}}", () => isCalc ? netBox() : "")
-    .replace("{{ADSCRIPT}}", () => !AD_CLIENT && isCalc && customAds.head ? customAds.head : AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "");
+    .replace("{{ADSCRIPT}}", () => !AD_CLIENT && isCalc && customAds.head ? customAds.head : AD_CLIENT ? adLoader() : "");
   if (c.id === "home") html = html.replace(/<header>[\s\S]*?<\/header>\s*/, ""); // the homepage carries its own h1 inside the intro panel
   const out = c.id === "home" ? path.join(root, "index.html") : path.join(root, pathOf(c), "index.html");
   fs.mkdirSync(path.dirname(out), { recursive: true });
@@ -227,14 +235,14 @@ ${netBox()}<section class="howto related"><h2>More guides</h2><ul class="ticks">
   const ld = [{ "@context": "https://schema.org", "@type": "Article", headline: g.title, description: g.desc, url, dateModified: g.updated, datePublished: g.updated, inLanguage: "en-IN", mainEntityOfPage: url, image: OG_IMAGE, author: { "@type": "Person", name: "Diptiranjan Sutar", url: SITE + "about-us/" }, publisher: { "@type": "Organization", name: SITE_NAME, url: SITE, logo: { "@type": "ImageObject", url: SITE + "images/icon-512.png" } } },
     { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE }, { "@type": "ListItem", position: 2, name: "Guides", item: SITE + "guides/" }, { "@type": "ListItem", position: 3, name: g.title, item: url }] },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: g.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) }];
-  writeGuide("guides/" + g.slug, guideTemplate.replace("{{BASEHREF}}", "../../").replace("{{SEO}}", () => guideSeo(g.title, g.desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "").replace("{{ANALYTICS}}", () => analytics).replace("{{BODY}}", () => body), "guide:" + g.slug, url);
+  writeGuide("guides/" + g.slug, guideTemplate.replace("{{BASEHREF}}", "../../").replace("{{SEO}}", () => guideSeo(g.title, g.desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? adLoader() : "").replace("{{ANALYTICS}}", () => analytics).replace("{{BODY}}", () => body), "guide:" + g.slug, url);
 });
 {
   const url = SITE + "guides/", title = "Investing Guides for India", desc = "Plain-language guides on SIPs, lumpsum investing, capital gains tax and retirement planning, each linked to a free calculator.";
   const body = `<header><p class="gmeta"><a href="./">Nivesh Calc</a></p><h1>${title}</h1><p class="lede">${desc}</p></header>` +
     guides.map(g => `<a class="gcard" href="guides/${g.slug}/"><b>${esc(g.title)}</b><span>${esc(g.desc)}</span></a>`).join("") + adUnit("wide");
   const ld = [{ "@context": "https://schema.org", "@type": "CollectionPage", name: title, url, description: desc }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE }, { "@type": "ListItem", position: 2, name: "Guides", item: url }] }];
-  writeGuide("guides", guideTemplate.replace("{{BASEHREF}}", "../").replace("{{SEO}}", () => guideSeo(title, desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "").replace("{{ANALYTICS}}", () => analytics).replace("{{BODY}}", () => body), "guides-index", url);
+  writeGuide("guides", guideTemplate.replace("{{BASEHREF}}", "../").replace("{{SEO}}", () => guideSeo(title, desc, url, ld)).replace("{{ADSCRIPT}}", () => AD_CLIENT ? adLoader() : "").replace("{{ANALYTICS}}", () => analytics).replace("{{BODY}}", () => body), "guides-index", url);
 }
 // 404 page: Cloudflare Pages serves /404.html with a real 404 status for any missing URL. Links resolve from the site root
 // because it can be shown at any depth; noindex and no canonical, and it is not in the sitemap.
@@ -249,10 +257,10 @@ ${netBox()}<section class="howto related"><h2>More guides</h2><ul class="ticks">
     .replace("{{SEO}}", () => nfSeo).replace("{{ANALYTICS}}", () => analytics).replace("{{ID}}", nf.id).replace("{{NAV}}", () => navFor(nf))
     .replace("{{SUPPORT}}", () => { const k = all.find(x => x.id === "coffee"); return `<div class="support"><a href="${pathOf(k)}" data-id="coffee"><span class="ic">${esc(k.ic)}</span><span class="lb">${esc(k.name)}</span></a></div>`; })
     .replace("{{H1}}", () => esc(nf.name)).replace("{{LEDE}}", () => esc(nf.lede)).replace("{{BODYCLASS}}", "").replace("{{CRUMB}}", "")
-    .replace("{{PAGEHIDDEN}}", "").replace("{{PAGEHTML}}", () => nf.html).split("{{WORKHIDDEN}}").join(" hidden")
+    .replace("{{FIELDS}}", "").replace("{{RESULT}}", "").replace("{{PAGEHIDDEN}}", "").replace("{{PAGEHTML}}", () => nf.html).split("{{WORKHIDDEN}}").join(" hidden")
     .replace("{{FORMULA}}", "").replace("{{HOWTO}}", "").replace("{{RELATED}}", "").replace("{{AFFILIATE}}", "")
     .replace("{{AD1}}", "").replace("{{AD2}}", "").replace("{{AD3}}", "")
-    .replace("{{ADSCRIPT}}", () => AD_CLIENT ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}" crossorigin="anonymous"></script>` : "");
+    .replace("{{ADSCRIPT}}", () => AD_CLIENT ? adLoader() : "");
   fs.writeFileSync(path.join(root, "404.html"), html); n++;
 }
 // Web app manifest

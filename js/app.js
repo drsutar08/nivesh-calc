@@ -837,15 +837,60 @@ const PAGES = [
    <p><b>Reminder:</b> invest only money you can afford to lose, and make decisions with a qualified adviser.</p></div>`}
 ];
 const LOT_COLORS=["var(--accent)","var(--bar2)","#4a90d9","#c0608f","#8a6fd1","#d9774a"];
+// Pure rendering helpers. The build (scripts/build.js) uses these to pre-render every calculator's inputs and example
+// result into the HTML, and the page uses the same ones, so nothing moves when this script runs.
+function fieldHTML(cid,id,label,val,unit){
+  const pre = unit==="₹";
+  return `<label class="f" for="f-${cid}-${id}">${label}<div class="inp">${pre?'<span>₹</span>':''}<input id="f-${cid}-${id}" data-k="${id}" type="number" inputmode="decimal" step="any" value="${val}">${!pre&&unit?`<span>${unit}</span>`:''}</div></label>`;
+}
+function fieldsHTML(c,v){
+  return c.fields.map(([k,l,d,u])=>fieldHTML(c.id,k,l,v[k]??d,u)).join("") +
+    `<div class="btns"><button class="btn" type="button" id="reset">Reset to example</button></div>`;
+}
+function lotsHTML(lots){
+  return `<div class="lot lot-head" aria-hidden="true"><span></span><span>Units</span><span>Price / share</span><span class="amt">Amount</span><span></span></div>`+
+  lots.map((l,i)=>`<div class="lot"><span class="n" style="--c:${LOT_COLORS[i%LOT_COLORS.length]};${i%LOT_COLORS.length===1?"color:#1a1a1a":""}">${String(i+1).padStart(2,"0")}</span>
+    <div class="inp"><input id="f-lot-u-${i}" aria-label="Purchase ${i+1} units" placeholder="0" data-lot="${i}" data-p="0" type="number" inputmode="decimal" step="any" value="${l[0]}"></div>
+    <div class="inp"><span>₹</span><input id="f-lot-p-${i}" aria-label="Purchase ${i+1} price per share" placeholder="0.00" data-lot="${i}" data-p="1" type="number" inputmode="decimal" step="any" value="${l[1]}"></div>
+    <output class="amt" data-amt="${i}">${inr((parseFloat(l[0])||0)*(parseFloat(l[1])||0))}</output>
+    <button class="x" type="button" data-del="${i}" aria-label="Remove purchase ${i+1}" ${lots.length<2?"disabled":""}>×</button></div>`).join("")+
+    `<div class="btns"><button class="btn primary" type="button" id="add">+ Add purchase</button><button class="btn" type="button" id="clear">Clear all</button></div>`;
+}
+// vals: the lots array for the stock average calculator, otherwise an object of parsed field values
+function resultFor(c,vals){
+  if(c.lots){
+    const lots=vals.map(([u,p])=>[parseFloat(u)||0,parseFloat(p)||0]).filter(([u])=>u>0);
+    const units=lots.reduce((s,[u])=>s+u,0), amt=lots.reduce((s,[u,p])=>s+u*p,0);
+    const lo=lots.length?Math.min(...lots.map(l=>l[1])):NaN, hi=lots.length?Math.max(...lots.map(l=>l[1])):NaN;
+    const all=vals.map(([u,p],i)=>({i,amt:(parseFloat(u)||0)*(parseFloat(p)||0)})).filter(x=>x.amt>0);
+    return {hero:["Average buy price",units?inr(amt/units):"—"],
+       chips:[["Total units",num(units,4)],["Total invested",inr(amt)],["Purchases",num(lots.length,0)]],
+       rows:[["Lowest price",lots.length?inr(lo):"—"],["Highest price",lots.length?inr(hi):"—"]],
+       lotBar:amt>0?all.map(x=>({n:x.i+1,pct:x.amt/amt*100,c:LOT_COLORS[x.i%LOT_COLORS.length]})):null,
+       note:units?null:"Enter units and price for at least one purchase."};
+  }
+  const bad=Object.values(vals).some(v=>!isFinite(v));
+  const needPos=Object.entries(vals).some(([k,v])=>v<=0 && ![...["chg","tax"],...(c.zeroOk||[])].includes(k));
+  return bad||needPos ? {hero:[c.fields[0][1],"—"],rows:[],note:"Fill every field with a number above zero to see the result."} : c.calc(vals);
+}
+function resultHTML(r){
+  let h=`<div class="hero-num"><span class="k">${r.hero[0]}</span><span class="v ${r.hero[2]||""}">${r.hero[1]}</span></div>`;
+  if(r.chips) h+=`<div class="chips">${r.chips.map(([k,v])=>`<div class="chip"><span>${k}</span><b>${v}</b></div>`).join("")}</div>`;
+  if(r.lotBar) h+=`<div class="split"><div class="cap">Share of total investment</div><div class="bar" role="img" aria-label="${r.lotBar.map(x=>`Purchase ${x.n} ${Math.round(x.pct)}%`).join(", ")}">${r.lotBar.map(x=>`<i style="width:${x.pct}%;background:${x.c}"></i>`).join("")}</div>
+    <div class="legend">${r.lotBar.map(x=>`<span><b style="background:${x.c}"></b>#${x.n} · ${x.pct.toFixed(1)}%</span>`).join("")}</div></div>`;
+  if(r.rows.length) h+=`<dl>${r.rows.map(([k,v,c])=>`<div><dt>${k}</dt><dd class="${c||""}">${v}</dd></div>`).join("")}</dl>`;
+  if(r.bar && r.bar[0]+r.bar[1]>0){const [a,b]=r.bar,t=a+b,L=r.barLabels||["Invested","Returns"];
+    h+=`<div class="split"><div class="bar" role="img" aria-label="${L[0]} ${Math.round(a/t*100)}%, ${L[1]} ${Math.round(b/t*100)}%"><i style="width:${a/t*100}%;background:var(--accent)"></i><i style="width:${b/t*100}%;background:var(--bar2)"></i></div>
+      <div class="legend"><span><b style="background:var(--accent)"></b>${L[0]} ${Math.round(a/t*100)}%</span><span><b style="background:var(--bar2)"></b>${L[1]} ${Math.round(b/t*100)}%</span></div></div>`;}
+  if(r.note) h+=`<div class="note">${r.note}</div>`;
+  return h;
+}
+/* ==== UI: everything below needs a browser ==== */
 const $=s=>document.querySelector(s);
 const state={};
 let cur;
 
 
-function field(id,label,val,unit){
-  const pre = unit==="₹";
-  return `<label class="f" for="f-${cur.id}-${id}">${label}<div class="inp">${pre?'<span>₹</span>':''}<input id="f-${cur.id}-${id}" data-k="${id}" type="number" inputmode="decimal" step="any" value="${val}">${!pre&&unit?`<span>${unit}</span>`:''}</div></label>`;
-}
 function showPage(pg){
   document.querySelectorAll("#side a[data-id]").forEach(a=>{ if(a.dataset.id===pg.id) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
   $("#title").textContent=pg.name; $("#lede").textContent=pg.lede;
@@ -863,8 +908,7 @@ function render(id){
   if(cur.lots){ state[cur.id] ||= cur.lots.map(l=>[...l]); drawLots(); }
   else{
     const v=state[cur.id]||{};
-    $("#fields").innerHTML = cur.fields.map(([k,l,d,u])=>field(k,l,v[k]??d,u)).join("") +
-      `<div class="btns"><button class="btn" type="button" id="reset">Reset to example</button></div>`;
+    $("#fields").innerHTML = fieldsHTML(cur,v);
     $("#reset").onclick=()=>{delete state[cur.id];render(cur.id)};
   }
   compute();
@@ -873,48 +917,23 @@ function render(id){
 
 function drawLots(){
   const lots=state[cur.id];
-  $("#fields").innerHTML = `<div class="lot lot-head" aria-hidden="true"><span></span><span>Units</span><span>Price / share</span><span class="amt">Amount</span><span></span></div>`+
-  lots.map((l,i)=>`<div class="lot"><span class="n" style="--c:${LOT_COLORS[i%LOT_COLORS.length]};${i%LOT_COLORS.length===1?"color:#1a1a1a":""}">${String(i+1).padStart(2,"0")}</span>
-    <div class="inp"><input id="f-lot-u-${i}" aria-label="Purchase ${i+1} units" placeholder="0" data-lot="${i}" data-p="0" type="number" inputmode="decimal" step="any" value="${l[0]}"></div>
-    <div class="inp"><span>₹</span><input id="f-lot-p-${i}" aria-label="Purchase ${i+1} price per share" placeholder="0.00" data-lot="${i}" data-p="1" type="number" inputmode="decimal" step="any" value="${l[1]}"></div>
-    <output class="amt" data-amt="${i}">${inr((parseFloat(l[0])||0)*(parseFloat(l[1])||0))}</output>
-    <button class="x" type="button" data-del="${i}" aria-label="Remove purchase ${i+1}" ${lots.length<2?"disabled":""}>×</button></div>`).join("")+
-    `<div class="btns"><button class="btn primary" type="button" id="add">+ Add purchase</button><button class="btn" type="button" id="clear">Clear all</button></div>`;
+  $("#fields").innerHTML = lotsHTML(lots);
   $("#add").onclick=()=>{lots.push(["",""]);drawLots();compute();$(`#f-lot-u-${lots.length-1}`).focus()};
   $("#clear").onclick=()=>{state[cur.id]=[["",""],["",""]];drawLots();compute()};
   document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{lots.splice(+b.dataset.del,1);drawLots();compute()});
 }
 
 function compute(){
-  let r;
+  let vals;
   if(cur.lots){
-    const lots=state[cur.id].map(([u,p])=>[parseFloat(u)||0,parseFloat(p)||0]).filter(([u])=>u>0);
-    const units=lots.reduce((s,[u])=>s+u,0), amt=lots.reduce((s,[u,p])=>s+u*p,0);
-    const lo=lots.length?Math.min(...lots.map(l=>l[1])):NaN, hi=lots.length?Math.max(...lots.map(l=>l[1])):NaN;
     state[cur.id].forEach((l,i)=>{const o=document.querySelector(`[data-amt="${i}"]`); if(o) o.textContent=inr((parseFloat(l[0])||0)*(parseFloat(l[1])||0));});
-    const all=state[cur.id].map(([u,p],i)=>({i,amt:(parseFloat(u)||0)*(parseFloat(p)||0)})).filter(x=>x.amt>0);
-    r={hero:["Average buy price",units?inr(amt/units):"—"],
-       chips:[["Total units",num(units,4)],["Total invested",inr(amt)],["Purchases",num(lots.length,0)]],
-       rows:[["Lowest price",lots.length?inr(lo):"—"],["Highest price",lots.length?inr(hi):"—"]],
-       lotBar:amt>0?all.map(x=>({n:x.i+1,pct:x.amt/amt*100,c:LOT_COLORS[x.i%LOT_COLORS.length]})):null,
-       note:units?null:"Enter units and price for at least one purchase."};
+    vals=state[cur.id];
   } else {
-    const f={}; let bad=false;
-    document.querySelectorAll("#fields input").forEach(i=>{f[i.dataset.k]=parseFloat(i.value); if(!isFinite(f[i.dataset.k])) bad=true;});
-    state[cur.id]=f;
-    const needPos = Object.entries(f).some(([k,v])=>v<=0 && ![...["chg","tax"],...(cur.zeroOk||[])].includes(k));
-    r = bad||needPos ? {hero:[cur.fields[0][1],"—"],rows:[],note:"Fill every field with a number above zero to see the result."} : cur.calc(f);
+    const f={};
+    document.querySelectorAll("#fields input").forEach(i=>{f[i.dataset.k]=parseFloat(i.value);});
+    state[cur.id]=f; vals=f;
   }
-  let h=`<div class="hero-num"><span class="k">${r.hero[0]}</span><span class="v ${r.hero[2]||""}">${r.hero[1]}</span></div>`;
-  if(r.chips) h+=`<div class="chips">${r.chips.map(([k,v])=>`<div class="chip"><span>${k}</span><b>${v}</b></div>`).join("")}</div>`;
-  if(r.lotBar) h+=`<div class="split"><div class="cap">Share of total investment</div><div class="bar" role="img" aria-label="${r.lotBar.map(x=>`Purchase ${x.n} ${Math.round(x.pct)}%`).join(", ")}">${r.lotBar.map(x=>`<i style="width:${x.pct}%;background:${x.c}"></i>`).join("")}</div>
-    <div class="legend">${r.lotBar.map(x=>`<span><b style="background:${x.c}"></b>#${x.n} · ${x.pct.toFixed(1)}%</span>`).join("")}</div></div>`;
-  if(r.rows.length) h+=`<dl>${r.rows.map(([k,v,c])=>`<div><dt>${k}</dt><dd class="${c||""}">${v}</dd></div>`).join("")}</dl>`;
-  if(r.bar && r.bar[0]+r.bar[1]>0){const [a,b]=r.bar,t=a+b,L=r.barLabels||["Invested","Returns"];
-    h+=`<div class="split"><div class="bar" role="img" aria-label="${L[0]} ${Math.round(a/t*100)}%, ${L[1]} ${Math.round(b/t*100)}%"><i style="width:${a/t*100}%;background:var(--accent)"></i><i style="width:${b/t*100}%;background:var(--bar2)"></i></div>
-      <div class="legend"><span><b style="background:var(--accent)"></b>${L[0]} ${Math.round(a/t*100)}%</span><span><b style="background:var(--bar2)"></b>${L[1]} ${Math.round(b/t*100)}%</span></div></div>`;}
-  if(r.note) h+=`<div class="note">${r.note}</div>`;
-  $("#result").innerHTML=h;
+  $("#result").innerHTML=resultHTML(resultFor(cur,vals));
 }
 
 $("#form").addEventListener("input",e=>{

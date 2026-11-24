@@ -168,9 +168,9 @@ a.btn{text-decoration:none;display:inline-block}
 .ad:not(:has(ins[data-ad-status="filled"])){position:absolute;left:0;width:100%;visibility:hidden;pointer-events:none;margin:0;max-height:0;overflow:hidden}
 .ad ins[data-ad-status="unfilled"]{display:none!important}
 
-/* Second network 300x250: stays out of the layout until its iframe exists. No label: its fill cannot be detected, so a label could sit above an empty box. */
+/* Second network 300x250: stays out of the layout until an ad appears in its frame (the loader adds .on). */
 .adx{display:none;text-align:center;margin:0}
-.adx:has(iframe){display:block}
+.adx.on{display:block} /* shown only once the ad network places an ad inside its frame */
 
 /* Homepage ("colour blocks"): gradient block per category. Colours: -1/-2 = gradient pair (white text sits on them), -c = text colour on the page background */
 :root{--brand:#0f7a55;--brand-soft:#dff2ea;--stocks-s:#dcf5ea;--funds-s:#e6e8ff;--growth-s:#fdf0d8;--everyday-s:#fde4ef;--savings-s:#e0f2fe;--savings-1:#0ea5e9;--savings-2:#0369a1;--savings-c:#0369a1;--stocks-1:#059669;--stocks-2:#0f766e;--funds-1:#6d5dfc;--funds-2:#4338ca;--growth-1:#e8890c;--growth-2:#c2410c;--everyday-1:#e11d48;--everyday-2:#a21caf;

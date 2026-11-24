@@ -550,6 +550,31 @@ const CALCS = [
     return {hero:[net<=brk?"Borrowing costs less, saving":"Breaking the FD costs less, saving",inr(Math.abs(brk-net),0),"gain"],rows:[["Most you can borrow",inr(max,0)],["Loan interest rate",pct(lr)],["Interest on the loan",inr(int,0),"loss"],["Net cost of the loan (the FD keeps earning)",inr(net,0),"loss"],["Penalty if you break the FD now",inr(brk,0),"loss"]],
       note:f.need>max?"You need more than you can borrow against this FD.":null}},
   formula:"A loan or overdraft against an FD usually costs the FD rate plus 1% to 2%, and your FD keeps earning interest meanwhile, so the real cost is roughly the gap: amount × extra rate × months ÷ 12. Breaking the FD instead usually cuts the rate on the whole deposit by the penalty for the time it has already run: FD × penalty × months held ÷ 12. This is an estimate. Banks also differ in whether they apply the rate for the shorter period, which can make breaking the FD costlier."},
+ {id:"income-tax",group:"Savings & salary",ic:"IT",name:"Income Tax Calculator",lede:"Compare your income tax under the new and old regimes for FY 2026-27, and see which one saves more.",
+  zeroOk:["oth","c80","d80","hra","hl","nps"],
+  fields:[["age","Your age",30,"years"],["sal","Salary income (yearly, before deductions)",1500000,"₹"],["oth","Other income (interest, rent, etc.)",0,"₹"],["c80","80C investments (EPF, PPF, ELSS, life insurance)",150000,"₹"],["d80","Health insurance premium (80D)",25000,"₹"],["hra","HRA exemption",0,"₹"],["hl","Home loan interest on a self-occupied home",0,"₹"],["nps","Extra NPS contribution (80CCD(1B))",0,"₹"]],
+  calc:f=>{
+    const slab=(x,s)=>{let t=0,prev=0;for(const[lim,r] of s){if(x>prev){t+=(Math.min(x,lim)-prev)*r/100;}prev=lim;}return t;};
+    const NEW=[[400000,0],[800000,5],[1200000,10],[1600000,15],[2000000,20],[2400000,25],[Infinity,30]];
+    const ex=f.age>=80?500000:f.age>=60?300000:250000, OLD=[[ex,0],[500000,5],[1000000,20],[Infinity,30]].filter(([l],k,a)=>k===0||l>a[0][0]);
+    const scRate=(x,reg)=>x>50000000?(reg==="new"?25:37):x>20000000?25:x>10000000?15:x>5000000?10:0;
+    const base=(x,reg)=>{ let t=slab(x,reg==="new"?NEW:OLD);
+      if(reg==="new"){ if(x<=1200000) t=Math.max(0,t-60000); else t=Math.min(t,x-1200000); }
+      else if(x<=500000) t=Math.max(0,t-12500);
+      return t; };
+    const total=(x,reg)=>{ const t=base(x,reg), rr=scRate(x,reg); let sc=t*rr/100;
+      const T=[50000000,20000000,10000000,5000000].find(v=>x>v);
+      if(T){ const tT=base(T,reg), cap=tT*(1+scRate(T,reg)/100)+(x-T); sc=Math.max(0,Math.min(t+sc,cap)-t); }
+      return {tax:t, sc, cess:(t+sc)*0.04, all:(t+sc)*1.04}; };
+    const tiN=Math.max(0,f.sal-Math.min(f.sal,75000)+f.oth);
+    const dOld=Math.min(f.c80,150000)+f.d80+f.hra+Math.min(f.hl,200000)+Math.min(f.nps,50000);
+    const grossOld=Math.max(0,f.sal-Math.min(f.sal,50000)+f.oth), tiO=Math.max(0,grossOld-dOld);
+    const N=total(tiN,"new"), O=total(tiO,"old"), better=N.all<=O.all?"New regime":"Old regime", save=Math.abs(N.all-O.all), best=Math.min(N.all,O.all);
+    let need=null; if(N.all<O.all){ let lo=0, hi=tiO; for(let k=0;k<80;k++){const m=(lo+hi)/2; if(total(Math.max(0,tiO-m),"old").all>N.all) lo=m; else hi=m;} need=(lo+hi)/2; }
+    const capped=[]; if(f.c80>150000) capped.push("80C is capped at ₹1.5 lakh"); if(f.hl>200000) capped.push("home loan interest at ₹2 lakh"); if(f.nps>50000) capped.push("extra NPS at ₹50,000");
+    return {hero:[`${better} saves you`,inr(save,0),"gain"],rows:[["Tax under the new regime (with cess)",inr(N.all,0)],["Tax under the old regime (with cess)",inr(O.all,0)],["Taxable income, new regime",inr(tiN,0)],["Taxable income, old regime",inr(tiO,0)],["Deductions counted in the old regime",inr(dOld,0)],[`Monthly tax under the ${better.toLowerCase()}`,inr(best/12,0)],["Effective tax rate on your total income",pct(best/(f.sal+f.oth)*100)],...(need!==null?[["Extra deductions the old regime needs to match",inr(need,0)]]:[]),...((N.sc+O.sc)>0?[["Surcharge included (new / old)",`${inr(N.sc,0)} / ${inr(O.sc,0)}`]]:[])],
+      note:(capped.length?"The calculator applies the limits: "+capped.join(", ")+". ":"")+"Capital gains and other income taxed at special rates are not included."}},
+  formula:"Rates for FY 2026-27 (AY 2027-28) as published at the time of writing, for resident individuals. New regime: nil up to ₹4 lakh, 5% up to ₹8 lakh, 10% up to ₹12 lakh, 15% up to ₹16 lakh, 20% up to ₹20 lakh, 25% up to ₹24 lakh and 30% above, after a ₹75,000 standard deduction on salary. A rebate makes tax nil up to ₹12 lakh of taxable income, with marginal relief just above it. Old regime: nil up to ₹2.5 lakh (₹3 lakh from age 60, ₹5 lakh from age 80), 5% up to ₹5 lakh, 20% up to ₹10 lakh and 30% above, after a ₹50,000 standard deduction and the deductions you enter, with a rebate up to ₹5 lakh. Surcharge applies above ₹50 lakh, with marginal relief, and 4% health and education cess is added. Section numbers are those of the 1961 Act. The Income-tax Act, 2025 renumbers them but keeps these rates."},
  {id:"ssy",group:"Savings & salary",ic:"SS",name:"Sukanya Samriddhi Yojana Calculator",lede:"Estimate the tax-free maturity value of a Sukanya Samriddhi account for your daughter.",
   fields:[["d","Yearly deposit",150000,"₹"],["r","Interest rate (p.a.)",8.2,"%"],["age","Girl's age when the account is opened",5,"years"]],
   calc:f=>{ const dep=Math.min(f.d,150000); let b=0; for(let y=1;y<=21;y++){ if(y<=15) b+=dep; b*=1+f.r/100; } const inv=dep*15;
